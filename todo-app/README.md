@@ -1,4 +1,4 @@
-# Todo App (Course Project Step 1)
+# Todo App
 
 Simple Node.js HTTP server. On startup it prints "Server started in port N"
 
@@ -20,7 +20,7 @@ docker push zanaad/todo-app
 ## Deploy to Kubernetes
 
 ```bash
-kubectl create deployment todo-app --image=zanaad/todo-app
+kubectl apply -f k8s/deployment.yaml
 kubectl get deployments
 kubectl get pods
 kubectl logs -f pod_name_here

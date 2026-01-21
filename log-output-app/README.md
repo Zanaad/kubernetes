@@ -20,10 +20,7 @@ docker push zanaad/log-output-app
 ## Deploy to Kubernetes
 
 ```bash
-k3d cluster create -a 2
-kubectl cluster-info
-kubectl config use-context k3d-k3s-default
-kubectl create deployment log-output-app --image=zanaad/log-output-app
+kubectl apply -f k8s/deployment.yaml
 kubectl get deployments
 kubectl get pods
 kubectl logs -f pod_name_here

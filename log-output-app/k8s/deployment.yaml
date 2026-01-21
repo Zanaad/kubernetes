@@ -15,5 +15,3 @@ spec:
       containers:
         - name: log-output-app
           image: zanaad/log-output-app:latest
-          ports:
-          - containerPort: 3000
