@@ -12,11 +12,20 @@ spec:
       labels:
         app: todo-app
     spec:
+      volumes:
+        - name: todo-volume
+          persistentVolumeClaim:
+            claimName: todo-pvc
       containers:
         - name: todo-app
           image: zanaad/todo-app:latest
+          volumeMounts:
+            - name: todo-volume
+              mountPath: /var/lib/data
           ports:
           - containerPort: 3000
           env:
             - name: PORT
               value: "3000"
+            - name: IMAGE_DIR
+              value: "/var/lib/data"
