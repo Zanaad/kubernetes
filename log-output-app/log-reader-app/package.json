@@ -1,0 +1,12 @@
+{
+  "name": "log-reader-app",
+  "version": "1.0.0",
+  "description": "Reads shared log file and serves it over HTTP",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

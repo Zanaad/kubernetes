@@ -1,7 +1,7 @@
 {
-  "name": "log-output-app",
+  "name": "log-writer-app",
   "version": "1.0.0",
-  "description": "Application that generates and outputs a random string every 5 seconds",
+  "description": "Writes timestamped random string lines to a shared log file",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
