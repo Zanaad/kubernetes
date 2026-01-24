@@ -2,7 +2,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
-const LOG_FILE = process.env.LOG_FILE || "/var/log/shared/log.txt";
+const LOG_FILE = process.env.LOG_FILE || "/var/lib/shared/log.txt";
 const WRITE_INTERVAL_MS = 5000;
 const randomString = uuidv4();
 

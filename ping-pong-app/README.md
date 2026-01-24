@@ -1,8 +1,10 @@
 # Ping-Pong App
 
-Simple Node.js application that responds to GET requests on `/pingpong` with "pong X" where X is an incrementing counter stored in memory.
+Simple Node.js app that responds to `GET /pingpong` with `pong X` and stores the counter in a shared persistent volume so it survives pod restarts.
 
-## Build and push the image
+Data is stored in `/var/lib/shared/pong-count.txt` (shared PVC).
+
+## Rebuild and push the image
 
 ```bash
 docker build -t zanaad/ping-pong-app:latest .
@@ -11,28 +13,14 @@ docker push zanaad/ping-pong-app:latest
 
 ## Deploy to Kubernetes
 
+Apply storage first, then the app (PVC is shared with log-output):
+
 ```bash
 kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-kubectl apply -f ../log-output-app/k8s/ingress.yaml
-```
-
-Or from the parent directory:
-
-```bash
-kubectl apply -f ping-pong-app/k8s/
-kubectl apply -f log-output-app/k8s/ingress.yaml
 ```
 
 ## Access the application
 
-Access the ping-pong endpoint at `http://localhost:8080/pingpong`
+`http://localhost:8080/pingpong`
 
-The counter increments with each request:
-
-```bash
-curl http://localhost:8080/pingpong
-# Returns: pong 0
-curl http://localhost:8080/pingpong
-# Returns: pong 1
-```
+Each request increments the counter and writes it to the shared volume. The log-output app reads this counter and shows it alongside its log line.
