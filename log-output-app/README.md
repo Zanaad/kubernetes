@@ -16,16 +16,18 @@ A two-container application running in a single pod that communicates internally
   Ping / Pongs: <count>
   ```
 
-## Rebuild and push images
+## Namespace
+
+Create the `log-pong` namespace:
 
 ```bash
-cd log-writer-app
-docker build -t zanaad/log-writer-app:latest .
-docker push zanaad/log-writer-app:latest
+kubectl create namespace log-pong
+```
 
-cd ../log-reader-app
-docker build -t zanaad/log-reader-app:latest .
-docker push zanaad/log-reader-app:latest
+Switch to that namespace:
+
+```bash
+kubens log-pong
 ```
 
 ## Deploy to Kubernetes

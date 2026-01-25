@@ -9,17 +9,12 @@ Simple Node.js app that manages an in-memory counter and exposes it via HTTP end
 - In-memory counter (resets on pod restart)
 - No persistent storage required
 
-## Rebuild and push the image
-
-```bash
-docker build -t zanaad/ping-pong-app:latest .
-docker push zanaad/ping-pong-app:latest
-```
-
 ## Deploy to Kubernetes
 
+Already in `log-pong` namespace (created in log-output setup):
+
 ```bash
-kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/
 ```
 
 ## Access the application

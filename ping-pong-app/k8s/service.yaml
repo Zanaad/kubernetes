@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ping-pong-app-svc
+  namespace: log-pong
 spec:
   type: ClusterIP
   selector:
