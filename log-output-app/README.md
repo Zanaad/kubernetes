@@ -10,25 +10,21 @@ A two-container application running in a single pod that communicates internally
 - Both containers in single pod sharing network namespace
 - HTTP communication between containers on localhost
 - External HTTP call to ping-pong service via Kubernetes DNS
+- ConfigMap provides configuration via file volume and environment variable
 - Reader responds with:
   ```
+  file content: <content from ConfigMap file>
+  env variable: MESSAGE=<value from ConfigMap>
   <last log line>
   Ping / Pongs: <count>
   ```
 
-## Namespace
+## Configuration
 
-Create the `log-pong` namespace:
+The application uses a ConfigMap (`log-output-config`) that provides:
 
-```bash
-kubectl create namespace log-pong
-```
-
-Switch to that namespace:
-
-```bash
-kubens log-pong
-```
+- **Environment variable**: `MESSAGE` - displayed in the output
+- **File volume**: `information.txt` - mounted at `/config/information.txt` and read by log-reader-app
 
 ## Deploy to Kubernetes
 

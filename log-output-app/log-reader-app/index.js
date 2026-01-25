@@ -1,4 +1,5 @@
 const http = require("http");
+const fs = require("fs");
 
 const port = process.env.PORT || 3000;
 const LOG_WRITER_SERVICE =
@@ -70,7 +71,16 @@ const server = http.createServer(async (req, res) => {
       const logEntry = await getLogEntry();
       const pongCount = await getPingPongCount();
 
-      const responseText = `${logEntry}\nPing / Pongs: ${pongCount}`;
+      // Read config file and env variable
+      let fileContent = "(file not found)";
+      try {
+        fileContent = fs.readFileSync("/config/information.txt", "utf8").trim();
+      } catch (err) {
+        console.error("Failed to read config file:", err);
+      }
+      const envMessage = process.env.MESSAGE || "(not set)";
+
+      const responseText = `file content: ${fileContent}\nenv variable: MESSAGE=${envMessage}\n${logEntry}\nPing / Pongs: ${pongCount}`;
 
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end(responseText);
