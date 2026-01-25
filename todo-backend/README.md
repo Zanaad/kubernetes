@@ -7,11 +7,12 @@ Minimal Node.js API that stores todos in memory and exposes HTTP endpoints for t
 - `GET /todos` — return all todos as JSON
 - `POST /todos` — create a todo `{ text }` (max 140 chars), returns created todo `{ id, text }`
 
-## Build and push the image
+## Deploy to Kubernetes
+
+Already in `todo` namespace (created in todo-app setup):
 
 ```bash
-docker build -t zanaad/todo-backend:latest .
-docker push zanaad/todo-backend:latest
+kubectl apply -f k8s/
 ```
 
 ## Deploy to Kubernetes

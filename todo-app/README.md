@@ -9,11 +9,18 @@ Node.js frontend service that serves a static UI (HTML/JS/CSS) and proxies todo 
 - Daily image fetch & cache (`/image`) with 10-minute TTL
 - 140-char limit with live counter, responsive layout
 
-## Rebuild and push the image
+## Namespace
+
+Create the `todo` namespace:
 
 ```bash
-docker build -t zanaad/todo-app:latest .
-docker push zanaad/todo-app:latest
+kubectl create namespace todo
+```
+
+Switch to that namespace:
+
+```bash
+kubens todo
 ```
 
 ## Deploy to Kubernetes
