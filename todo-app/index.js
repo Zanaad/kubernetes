@@ -7,9 +7,11 @@ const port = process.env.PORT || 3000;
 const IMAGE_DIR = process.env.IMAGE_DIR || "/var/lib/data";
 const IMAGE_PATH = path.join(IMAGE_DIR, "cached-image.jpg");
 const METADATA_PATH = path.join(IMAGE_DIR, "image-metadata.json");
-const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+const CACHE_DURATION_MS =
+  parseInt(process.env.CACHE_DURATION_MS) || 10 * 60 * 1000;
 const TODO_BACKEND_URL =
   process.env.TODO_BACKEND_URL || "http://todo-backend-svc:3000";
+const IMAGE_URL = process.env.IMAGE_URL || "https://picsum.photos/1200";
 const INDEX_PATH = path.join(__dirname, "public", "index.html");
 
 // Ensure image directory exists
@@ -79,7 +81,7 @@ function fetchNewImage(callback) {
       });
   }
 
-  downloadImage(imageUrl);
+  downloadImage(IMAGE_URL);
 }
 
 // Get image (from cache or fetch new)

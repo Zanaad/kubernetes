@@ -28,5 +28,17 @@ spec:
           env:
             - name: PORT
               value: "3000"
+            - name: TODO_BACKEND_URL
+              value: "http://todo-backend-svc:3000"
             - name: IMAGE_DIR
               value: "/var/lib/data"
+            - name: CACHE_DURATION_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: todo-config
+                  key: CACHE_DURATION_MS
+            - name: IMAGE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: todo-config
+                  key: IMAGE_URL

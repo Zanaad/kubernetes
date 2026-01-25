@@ -9,19 +9,20 @@ Node.js frontend service that serves a static UI (HTML/JS/CSS) and proxies todo 
 - Daily image fetch & cache (`/image`) with 10-minute TTL
 - 140-char limit with live counter, responsive layout
 
-## Namespace
+## Configuration
 
-Create the `todo` namespace:
+All configuration is externalized via environment variables or ConfigMap:
 
-```bash
-kubectl create namespace todo
-```
+**Direct env (deployment)**:
 
-Switch to that namespace:
+- `PORT` — server port (default: 3000)
+- `IMAGE_DIR` — image cache directory (default: /var/lib/data)
+- `TODO_BACKEND_URL` — backend service URL (default: http://todo-backend-svc:3000)
 
-```bash
-kubens todo
-```
+**ConfigMap (`todo-config`)**:
+
+- `CACHE_DURATION_MS` — image cache TTL in milliseconds (default: 600000 = 10 minutes)
+- `IMAGE_URL` — image source URL (default: https://picsum.photos/1200)
 
 ## Deploy to Kubernetes
 
