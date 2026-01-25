@@ -1,55 +1,83 @@
 const http = require("http");
-const fs = require("fs/promises");
-const path = require("path");
 
 const port = process.env.PORT || 3000;
-const SHARED_VOLUME = process.env.SHARED_VOLUME || "/var/lib/shared";
-const LOG_FILE = process.env.LOG_FILE || path.join(SHARED_VOLUME, "log.txt");
-const COUNTER_FILE =
-  process.env.COUNTER_FILE || path.join(SHARED_VOLUME, "pong-count.txt");
+const LOG_WRITER_SERVICE =
+  process.env.LOG_WRITER_SERVICE || "http://localhost:3001";
+const PING_PONG_SERVICE =
+  process.env.PING_PONG_SERVICE || "http://ping-pong-app-svc:3000";
 
-async function readLogFile() {
-  try {
-    const content = await fs.readFile(LOG_FILE, "utf8");
-    return content;
-  } catch (err) {
-    if (err.code === "ENOENT") {
-      return "(log file not found yet)\n";
-    }
-    throw err;
-  }
+async function getLogEntry() {
+  return new Promise((resolve) => {
+    const url = new URL(`${LOG_WRITER_SERVICE}/logs`);
+
+    http
+      .get(url, (response) => {
+        let data = "";
+
+        response.on("data", (chunk) => {
+          data += chunk;
+        });
+
+        response.on("end", () => {
+          try {
+            const json = JSON.parse(data);
+            resolve(json.entry || "(no logs yet)");
+          } catch (err) {
+            console.error("Failed to parse log-writer response:", err);
+            resolve("(no logs yet)");
+          }
+        });
+      })
+      .on("error", (err) => {
+        console.error("Failed to fetch logs from writer:", err);
+        resolve("(no logs yet)");
+      });
+  });
 }
 
-async function readPingPongCount() {
-  try {
-    const content = await fs.readFile(COUNTER_FILE, "utf8");
-    return content.trim();
-  } catch (err) {
-    if (err.code === "ENOENT") {
-      return "0";
-    }
-    throw err;
-  }
+async function getPingPongCount() {
+  return new Promise((resolve) => {
+    const url = new URL(`${PING_PONG_SERVICE}/count`);
+
+    http
+      .get(url, (response) => {
+        let data = "";
+
+        response.on("data", (chunk) => {
+          data += chunk;
+        });
+
+        response.on("end", () => {
+          try {
+            const json = JSON.parse(data);
+            resolve(json.count.toString());
+          } catch (err) {
+            console.error("Failed to parse ping-pong response:", err);
+            resolve("0");
+          }
+        });
+      })
+      .on("error", (err) => {
+        console.error("Failed to fetch ping-pong count:", err);
+        resolve("0");
+      });
+  });
 }
 
 const server = http.createServer(async (req, res) => {
   if (req.url === "/" && req.method === "GET") {
     try {
-      const logContent = await readLogFile();
-      const pongCount = await readPingPongCount();
+      const logEntry = await getLogEntry();
+      const pongCount = await getPingPongCount();
 
-      // Format: last log line + ping/pong count
-      const logLines = logContent.trim().split("\n");
-      const lastLogLine = logLines[logLines.length - 1] || "(no logs yet)";
-
-      const responseText = `${lastLogLine}\nPing / Pongs: ${pongCount}`;
+      const responseText = `${logEntry}\nPing / Pongs: ${pongCount}`;
 
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end(responseText);
     } catch (err) {
-      console.error("Failed to read files", err);
+      console.error("Failed to process request", err);
       res.writeHead(500, { "Content-Type": "text/plain" });
-      res.end("Failed to read files\n");
+      res.end("Failed to process request\n");
     }
   } else {
     res.writeHead(404, { "Content-Type": "text/plain" });
@@ -59,6 +87,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(port, () => {
   console.log(`Log reader listening on port ${port}`);
-  console.log(`Reading log from ${LOG_FILE}`);
-  console.log(`Reading pong count from ${COUNTER_FILE}`);
+  console.log(`Fetching logs from ${LOG_WRITER_SERVICE}/logs`);
+  console.log(`Fetching pong count from ${PING_PONG_SERVICE}/count`);
 });

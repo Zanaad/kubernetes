@@ -12,22 +12,11 @@ spec:
       labels:
         app: ping-pong-app
     spec:
-      volumes:
-        - name: shared-volume
-          persistentVolumeClaim:
-            claimName: shared-pvc
       containers:
         - name: ping-pong-app
           image: zanaad/ping-pong-app:latest
-          volumeMounts:
-            - name: shared-volume
-              mountPath: /var/lib/shared
           ports:
             - containerPort: 3000
           env:
             - name: PORT
               value: "3000"
-            - name: SHARED_VOLUME
-              value: "/var/lib/shared"
-            - name: COUNTER_FILE
-              value: "/var/lib/shared/pong-count.txt"

@@ -1,30 +1,34 @@
-const fs = require("fs/promises");
-const path = require("path");
+const http = require("http");
 const { v4: uuidv4 } = require("uuid");
 
-const LOG_FILE = process.env.LOG_FILE || "/var/lib/shared/log.txt";
+const port = process.env.PORT || 3001;
 const WRITE_INTERVAL_MS = 5000;
 const randomString = uuidv4();
+let lastLogEntry = "";
 
-async function ensureDirectoryExists(filePath) {
-  const dir = path.dirname(filePath);
-  await fs.mkdir(dir, { recursive: true });
-}
-
-async function appendLogLine() {
+function generateLogEntry() {
   const timestamp = new Date().toISOString();
-  const line = `${timestamp}: ${randomString}\n`;
-  try {
-    await ensureDirectoryExists(LOG_FILE);
-    await fs.appendFile(LOG_FILE, line, "utf8");
-    console.log(`wrote -> ${line.trim()}`);
-  } catch (err) {
-    console.error("Failed to write log line", err);
-  }
+  lastLogEntry = `${timestamp}: ${randomString}`;
+  console.log(`log entry -> ${lastLogEntry}`);
 }
+
+const server = http.createServer((req, res) => {
+  if (req.url === "/logs" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ entry: lastLogEntry }));
+  } else {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("Not Found\n");
+  }
+});
 
 console.log(`Log writer starting. Random string: ${randomString}`);
-console.log(`Writing every ${WRITE_INTERVAL_MS / 1000}s to ${LOG_FILE}`);
+console.log(`Generating log entries every ${WRITE_INTERVAL_MS / 1000}s`);
 
-appendLogLine();
-setInterval(appendLogLine, WRITE_INTERVAL_MS);
+generateLogEntry();
+setInterval(generateLogEntry, WRITE_INTERVAL_MS);
+
+server.listen(port, () => {
+  console.log(`Log writer listening on port ${port}`);
+  console.log(`Logs available at /logs endpoint`);
+});

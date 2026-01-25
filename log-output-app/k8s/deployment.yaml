@@ -12,33 +12,18 @@ spec:
       labels:
         app: log-output-app
     spec:
-      volumes:
-        - name: shared-volume
-          persistentVolumeClaim:
-            claimName: shared-pvc
       containers:
         - name: log-writer-app
           image: zanaad/log-writer-app:latest
-          volumeMounts:
-            - name: shared-volume
-              mountPath: /var/lib/shared
+          ports:
+            - containerPort: 3001
           env:
-            - name: LOG_FILE
-              value: "/var/lib/shared/log.txt"
-
+            - name: PORT
+              value: "3001"
         - name: log-reader-app
           image: zanaad/log-reader-app:latest
-          volumeMounts:
-            - name: shared-volume
-              mountPath: /var/lib/shared
           ports:
             - containerPort: 3000
           env:
             - name: PORT
               value: "3000"
-            - name: LOG_FILE
-              value: "/var/lib/shared/log.txt"
-            - name: SHARED_VOLUME
-              value: "/var/lib/shared"
-            - name: COUNTER_FILE
-              value: "/var/lib/shared/pong-count.txt"

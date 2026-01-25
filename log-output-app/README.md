@@ -1,15 +1,15 @@
 # Log Output App
 
-A two-container application running in a single pod and sharing a persistent volume at `/var/lib/shared`:
+A two-container application running in a single pod that communicates internally via HTTP:
 
-- **log-writer-app**: Generates a random UUID at startup and writes `timestamp: uuid` to `/var/lib/shared/log.txt` every 5 seconds.
-- **log-reader-app**: Serves the latest log line plus the ping-pong request count (`/var/lib/shared/pong-count.txt`) at `GET /`.
+- **log-writer-app** (port 3001): Generates a random UUID at startup and creates a new `timestamp: uuid` log entry every 5 seconds. Exposes `GET /logs` endpoint returning `{ "entry": "<latest log>" }`.
+- **log-reader-app** (port 3000): Aggregates log entries and ping-pong count, serving them at `GET /`. Fetches logs from log-writer via `http://localhost:3001/logs` and pong count from ping-pong service via `http://ping-pong-app-svc:3000/count`.
 
 ## Architecture
 
-- PersistentVolume (`shared-pv`) + PVC (`shared-pvc`) shared across apps
-- Writer appends to `/var/lib/shared/log.txt`
-- Ping-pong app updates `/var/lib/shared/pong-count.txt`
+- Both containers in single pod sharing network namespace
+- HTTP communication between containers on localhost
+- External HTTP call to ping-pong service via Kubernetes DNS
 - Reader responds with:
   ```
   <last log line>
@@ -30,16 +30,6 @@ docker push zanaad/log-reader-app:latest
 
 ## Deploy to Kubernetes
 
-Apply storage first, then apps:
-
-```bash
-kubectl apply -f k8s/persistent-volume.yaml
-kubectl apply -f k8s/persistent-volume-claim.yaml
-kubectl apply -f k8s/deployment.yaml
-```
-
-Or apply everything:
-
 ```bash
 kubectl apply -f k8s/
 ```
@@ -48,4 +38,4 @@ kubectl apply -f k8s/
 
 Open `http://localhost:8080/`
 
-You should see the latest writer log line and the current ping/pong count.
+You should see the latest log entry and the current ping/pong count. The log entry updates automatically every 5 seconds.
