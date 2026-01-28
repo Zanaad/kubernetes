@@ -44,6 +44,17 @@ function sendJson(res, status, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function logTodoAttempt(text, outcome, extra = {}) {
+  const payload = {
+    event: "todo-create",
+    outcome,
+    length: text.length,
+    text,
+    ...extra,
+  };
+  console.log(JSON.stringify(payload));
+}
+
 function parseRequestBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -82,14 +93,17 @@ const server = http.createServer(async (req, res) => {
       const text = (body.text || "").trim();
 
       if (!text) {
+        logTodoAttempt(text, "rejected", { reason: "text_required" });
         return sendJson(res, 400, { error: "text is required" });
       }
 
       if (text.length > 140) {
+        logTodoAttempt(text, "rejected", { reason: "too_long" });
         return sendJson(res, 400, { error: "text must be 140 chars or less" });
       }
 
       const todo = await createTodo(Date.now(), text);
+      logTodoAttempt(text, "created", { id: todo.id });
       return sendJson(res, 201, todo);
     } catch (err) {
       console.error("Failed to create todo", err);

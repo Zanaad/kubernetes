@@ -7,6 +7,8 @@ Node.js REST API that stores todos in a Postgres database and exposes HTTP endpo
 - **Endpoints**:
   - `GET /todos` — return all todos as JSON
   - `POST /todos` — create a todo `{ text }` (max 140 chars), returns created todo `{ id, text }`
+- **Request logging**: Logs every todo creation attempt (created or rejected)
+- **Validation**: Backend enforces the 140 character limit
 - **Postgres StatefulSet**: Single replica with persistent volume for todo storage
 - **Headless Service**: `postgres-svc` for stable network identity
 - **Secret Management**: Database credentials encrypted with SOPS and age keys
@@ -16,40 +18,35 @@ Node.js REST API that stores todos in a Postgres database and exposes HTTP endpo
 ## Build and push the image
 
 ```bash
-npm install
 docker build -t zanaad/todo-backend:latest .
 docker push zanaad/todo-backend:latest
 ```
 
-## Generate age key and encrypt secrets
-
-```bash
-age-keygen -o key.txt
-sops --encrypt --age PUBLIC_KEY_HERE --encrypted-regex '^(data)$' secret.yaml>secret.enc.yaml
-```
-
 ## Deploy to Kubernetes
-
-Decrypt and apply secrets first:
 
 ```bash
 kubens todo
-sops -d secret.enc.yaml | kubectl apply -f -
 kubectl apply -f k8s/
 ```
 
-## Debug Postgres
+## Quick test
 
-Connect to database for debugging:
+Create a todo:
 
 ```bash
-kubectl run -it --rm --restart=Never --image postgres psql-for-debugging sh
-psql postgres://USER:PASSWORD@postgres-svc:5432/DB_NAME
+curl -X POST http://localhost:8080/todos \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Read a random Wikipedia article"}'
 ```
 
-Inside psql:
+Create a todo longer than 140 chars (blocked):
 
-```sql
-\dt                      -- list tables
-SELECT * FROM counter;   -- view counter value
+```bash
+curl -X POST http://localhost:8080/todos \
+  -H "Content-Type: application/json" \
+  -d '{"text":"This todo is intentionally longer than 140 characters to verify that the backend rejects it and logs the rejection for monitoring."}'
 ```
+
+Added request logging to the backend and included a Grafana/Loki screenshot below.
+
+![Grafana logs](Grafana.png)
