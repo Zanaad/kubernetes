@@ -1,7 +1,43 @@
 const http = require("http");
+const { Pool } = require("pg");
 
 const port = process.env.PORT || 3000;
-let todos = [];
+
+const pool = new Pool({
+  host: process.env.POSTGRES_HOST || "postgres-svc",
+  user: process.env.POSTGRES_USER || "postgres",
+  password: process.env.POSTGRES_PASSWORD,
+  database: process.env.POSTGRES_DB || "todo",
+  port: 5432,
+});
+
+async function initDatabase() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS todos (
+        id BIGINT PRIMARY KEY,
+        text TEXT NOT NULL
+      )
+    `);
+    console.log("Todos table initialized");
+  } catch (err) {
+    console.error("Failed to initialize database", err);
+    process.exit(1);
+  }
+}
+
+async function getTodos() {
+  const result = await pool.query("SELECT id, text FROM todos ORDER BY id ASC");
+  return result.rows;
+}
+
+async function createTodo(id, text) {
+  const result = await pool.query(
+    "INSERT INTO todos (id, text) VALUES ($1, $2) RETURNING id, text",
+    [id, text],
+  );
+  return result.rows[0];
+}
 
 function sendJson(res, status, payload) {
   res.writeHead(status, { "Content-Type": "application/json" });
@@ -31,7 +67,13 @@ function parseRequestBody(req) {
 
 const server = http.createServer(async (req, res) => {
   if (req.url === "/todos" && req.method === "GET") {
-    return sendJson(res, 200, todos);
+    try {
+      const todos = await getTodos();
+      return sendJson(res, 200, todos);
+    } catch (err) {
+      console.error("Failed to fetch todos", err);
+      return sendJson(res, 500, { error: "Failed to fetch todos" });
+    }
   }
 
   if (req.url === "/todos" && req.method === "POST") {
@@ -47,9 +89,7 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { error: "text must be 140 chars or less" });
       }
 
-      const todo = { id: Date.now(), text };
-      todos.push(todo);
-
+      const todo = await createTodo(Date.now(), text);
       return sendJson(res, 201, todo);
     } catch (err) {
       console.error("Failed to create todo", err);
@@ -61,6 +101,12 @@ const server = http.createServer(async (req, res) => {
   res.end("Not Found\n");
 });
 
-server.listen(port, () => {
-  console.log(`todo-backend listening on port ${port}`);
-});
+async function start() {
+  await initDatabase();
+  server.listen(port, () => {
+    console.log(`todo-backend listening on port ${port}`);
+    console.log(`Connected to Postgres at ${process.env.POSTGRES_HOST}`);
+  });
+}
+
+start();
