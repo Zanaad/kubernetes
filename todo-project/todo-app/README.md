@@ -26,11 +26,15 @@ All configuration is externalized via environment variables or ConfigMap:
 
 ## Deploy to Kubernetes
 
+**With Kustomize (recommended)**:
+
 ```bash
-kubectl apply -f k8s/
+cd ../  # Go to todo-project root
+kubectl apply -k .
 ```
 
-## Access the application
+**Individual app only**:
 
-- Browser: `http://localhost:8080`
-- API (proxied): `http://localhost:8080/todos`
+```bash
+kubectl apply -k k8s/
+```
