@@ -26,14 +26,17 @@ The application uses a ConfigMap (`log-output-config`) that provides:
 - **Environment variable**: `MESSAGE` - displayed in the output
 - **File volume**: `information.txt` - mounted at `/config/information.txt` and read by log-reader-app
 
-## Deploy to Kubernetes
+## Deploy to GKE with Ingress
+
+Deploy log-output and ping-pong with Ingress:
 
 ```bash
+kubens log-pong
 kubectl apply -f k8s/
+kubectl get ingress  # Get the Ingress IP
 ```
 
 ## Access the application
 
-Open `http://localhost:8080/`
-
-You should see the latest log entry and the current ping/pong count. The log entry updates automatically every 5 seconds.
+- **Local k3d**: `http://localhost:8080/`
+- **GKE Ingress**: `http://<INGRESS-IP>/` (log-output), `http://<INGRESS-IP>/pingpong` (ping-pong)

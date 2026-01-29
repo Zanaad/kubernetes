@@ -46,7 +46,10 @@ async function incrementCounter() {
 }
 
 const server = http.createServer(async (req, res) => {
-  if (req.url === "/pingpong" && req.method === "GET") {
+  if (req.url === "/" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("OK");
+  } else if (req.url === "/pingpong" && req.method === "GET") {
     try {
       const currentCount = await getCounter();
       const response = `pong ${currentCount}`;

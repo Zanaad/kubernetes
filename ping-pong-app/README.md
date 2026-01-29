@@ -5,6 +5,7 @@ Simple Node.js app that manages a counter stored in a Postgres database and expo
 ## Features & Architecture
 
 - **Endpoints**:
+  - `GET /`: Health check for Ingress
   - `GET /pingpong`: Increments and returns `pong X`
   - `GET /count`: Returns JSON `{ "count": X }` for other services to consume
 - **Postgres StatefulSet**: Single replica with persistent volume for counter storage
@@ -13,39 +14,25 @@ Simple Node.js app that manages a counter stored in a Postgres database and expo
 - **Auto-initialization**: Creates counter table and seeds initial value on startup
 - **Persistence**: Counter survives pod restarts
 
-## Deploy to GKE
+## Deploy to GKE with Ingress
 
-This exercise deploys ping-pong to Google Kubernetes Engine with a LoadBalancer service.
+Changes for GKE Ingress deployment:
 
-Setup GKE cluster:
-
-```bash
-gcloud auth login
-gcloud config set project PROJECT_NAME
-gcloud services enable container.googleapis.com
-gcloud container clusters create dwk-cluster --zone=europe-west3-b --cluster-version=1.32 --disk-size=32 --num-nodes=3 --machine-type=e2-micro
-gcloud components install gke-gcloud-auth-plugin
-```
-
-Changes for GKE deployment:
-
-- **Service**: Changed to `type: LoadBalancer` to expose publicly
+- **Service**: Changed to `type: ClusterIP` (default, used with Ingress)
+- **Code**: Added `/` health check endpoint for Ingress readiness probes
 - **StatefulSet**:
   - Set `storageClassName: standard` (GKE's default storage class)
   - Added `subPath: postgres` to volumeMounts to avoid "directory not empty" errors when using persistent volumes
 
-Deploy to GKE:
+Deploy to GKE with Ingress:
 
 ```bash
-kubectl create namespace log-pong
 kubens log-pong
-sops -d secret.enc.yaml | kubectl apply -f -
-kubectl apply -f k8s/
-kubectl get svc ping-pong-app-svc  # Get the external LoadBalancer IP
+kubectl apply -f k8s/service.yaml
 ```
 
 ## Access the application
 
 - **Local k3d**: `http://localhost:8080/pingpong`
-- **GKE LoadBalancer**: `http://<EXTERNAL-IP>/pingpong` (get IP from `kubectl get svc`)
+- **GKE Ingress**: `http://<INGRESS-IP>/pingpong`
 - **Internal**: `http://ping-pong-app-svc:3000/count` (used by log-reader)
