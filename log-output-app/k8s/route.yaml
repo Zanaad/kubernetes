@@ -17,7 +17,13 @@ spec:
     - matches:
       - path:
           type: PathPrefix
-          value: /pingpong    
+          value: /pingpong   
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
       backendRefs:
         - name: ping-pong-app-svc
           port: 3000

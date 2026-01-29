@@ -46,10 +46,10 @@ async function incrementCounter() {
 }
 
 const server = http.createServer(async (req, res) => {
-  if (req.url === "/" && req.method === "GET") {
+  if (req.url === "/healthz" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("OK");
-  } else if (req.url === "/pingpong" && req.method === "GET") {
+  } else if (req.url === "/" && req.method === "GET") {
     try {
       const currentCount = await getCounter();
       const response = `pong ${currentCount}`;
@@ -57,7 +57,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end(response);
     } catch (err) {
-      console.error("Failed to process /pingpong", err);
+      console.error("Failed to process /", err);
       res.writeHead(500, { "Content-Type": "text/plain" });
       res.end("Internal Server Error\n");
     }
