@@ -13,48 +13,39 @@ Simple Node.js app that manages a counter stored in a Postgres database and expo
 - **Auto-initialization**: Creates counter table and seeds initial value on startup
 - **Persistence**: Counter survives pod restarts
 
-## Rebuild and push the image
+## Deploy to GKE
+
+This exercise deploys ping-pong to Google Kubernetes Engine with a LoadBalancer service.
+
+Setup GKE cluster:
 
 ```bash
-npm install
-docker build -t zanaad/ping-pong-app:latest .
-docker push zanaad/ping-pong-app:latest
+gcloud auth login
+gcloud config set project PROJECT_NAME
+gcloud services enable container.googleapis.com
+gcloud container clusters create dwk-cluster --zone=europe-west3-b --cluster-version=1.32 --disk-size=32 --num-nodes=3 --machine-type=e2-micro
+gcloud components install gke-gcloud-auth-plugin
 ```
 
-## Generate age key and encrypt secrets
+Changes for GKE deployment:
+
+- **Service**: Changed to `type: LoadBalancer` to expose publicly
+- **StatefulSet**:
+  - Set `storageClassName: standard` (GKE's default storage class)
+  - Added `subPath: postgres` to volumeMounts to avoid "directory not empty" errors when using persistent volumes
+
+Deploy to GKE:
 
 ```bash
-age-keygen -o key.txt
-sops sops --encrypt --age PUBLIC_KEY_HERE --encrypted-regex '^(data)$' secret.yaml>secret.enc.yaml
-```
-
-## Deploy to Kubernetes
-
-Decrypt and apply secrets first:
-
-```bash
+kubectl create namespace log-pong
 kubens log-pong
 sops -d secret.enc.yaml | kubectl apply -f -
 kubectl apply -f k8s/
+kubectl get svc ping-pong-app-svc  # Get the external LoadBalancer IP
 ```
 
 ## Access the application
 
-- `http://localhost:8080/pingpong` - Increment and display counter
-- `http://ping-pong-app-svc:3000/count` - HTTP endpoint for other services (used by log-reader)
-
-## Debug Postgres
-
-Connect to database for debugging:
-
-```bash
-kubectl run -it --rm --restart=Never --image postgres psql-for-debugging sh
-psql postgres://USER:PASSWORD@postgres-svc:5432/DB_NAME
-```
-
-Inside psql:
-
-```sql
-\dt                      -- list tables
-SELECT * FROM counter;   -- view counter value
-```
+- **Local k3d**: `http://localhost:8080/pingpong`
+- **GKE LoadBalancer**: `http://<EXTERNAL-IP>/pingpong` (get IP from `kubectl get svc`)
+- **Internal**: `http://ping-pong-app-svc:3000/count` (used by log-reader)
