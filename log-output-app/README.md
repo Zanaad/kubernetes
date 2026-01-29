@@ -3,40 +3,47 @@
 A two-container application running in a single pod that communicates internally via HTTP:
 
 - **log-writer-app** (port 3001): Generates a random UUID at startup and creates a new `timestamp: uuid` log entry every 5 seconds. Exposes `GET /logs` endpoint returning `{ "entry": "<latest log>" }`.
-- **log-reader-app** (port 3000): Aggregates log entries and ping-pong count, serving them at `GET /`. Fetches logs from log-writer via `http://localhost:3001/logs` and pong count from ping-pong service via `http://ping-pong-app-svc:3000/count`.
+- **log-reader-app** (port 3000): Aggregates log entries and ping-pong count, serving them at `GET /`. Fetches logs from log-writer via `http://localhost:3001/logs` and pong count from ping-pong service via Kubernetes DNS.
 
-## Architecture
+## Deploy to GKE with Gateway API
 
-- Both containers in single pod sharing network namespace
-- HTTP communication between containers on localhost
-- External HTTP call to ping-pong service via Kubernetes DNS
-- ConfigMap provides configuration via file volume and environment variable
-- Reader responds with:
-  ```
-  file content: <content from ConfigMap file>
-  env variable: MESSAGE=<value from ConfigMap>
-  <last log line>
-  Ping / Pongs: <count>
-  ```
+This exercise replaces Ingress with Gateway API for HTTP routing.
 
-## Configuration
+**Gateway** (`gateway.yaml`):
 
-The application uses a ConfigMap (`log-output-config`) that provides:
+- Defines the load balancer entry point using `gke-l7-regional-external-managed` class
+- Listens on HTTP port 80
+- Requires a proxy-only subnet in the same region
 
-- **Environment variable**: `MESSAGE` - displayed in the output
-- **File volume**: `information.txt` - mounted at `/config/information.txt` and read by log-reader-app
+**HTTPRoute** (`route.yaml`):
 
-## Deploy to GKE with Ingress
+- Routes `/` to log-output-app-svc
+- Routes `/pingpong` to ping-pong-app-svc
 
-Deploy log-output and ping-pong with Ingress:
+**Prerequisites:**
+
+Create proxy-only subnet (one-time setup):
+
+```bash
+gcloud compute networks subnets create proxy-only-subnet \
+  --purpose=REGIONAL_MANAGED_PROXY \
+  --role=ACTIVE \
+  --region=europe-west3 \
+  --network=default \
+  --range=10.0.0.0/23
+```
+
+**Deploy:**
 
 ```bash
 kubens log-pong
 kubectl apply -f k8s/
-kubectl get ingress  # Get the Ingress IP
+
+# Get Gateway IP
+kubectl get gateway log-output-gateway
 ```
 
 ## Access the application
 
-- **Local k3d**: `http://localhost:8080/`
-- **GKE Ingress**: `http://<INGRESS-IP>/` (log-output), `http://<INGRESS-IP>/pingpong` (ping-pong)
+- `http://<GATEWAY-IP>/` - log-output with aggregated logs and pong count
+- `http://<GATEWAY-IP>/pingpong` - ping-pong counter
