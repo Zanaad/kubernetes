@@ -6,3 +6,6 @@ resources:
   - service.yaml
   - configmap.yaml
   - ingress.yaml
+images:
+  - name: zanaad/todo-app
+    newTag: latest

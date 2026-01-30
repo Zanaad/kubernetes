@@ -6,3 +6,6 @@ resources:
   - postgres-svc.yaml
   - deployment.yaml
   - service.yaml
+images:
+  - name: zanaad/todo-backend
+    newTag: latest

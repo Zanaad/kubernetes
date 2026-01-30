@@ -1,0 +1,87 @@
+name: Release application
+
+on: 
+  push:
+    branches:
+      - main
+    paths:
+      - 'todo-project/**'
+      - '.github/workflows/todo-deploy.yaml'
+
+env:
+  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+  GKE_CLUSTER: dwk-cluster
+  GKE_ZONE: europe-west3-b
+  REGISTRY: europe-west3-docker.pkg.dev
+  REPOSITORY: todo-project
+  FRONTEND_IMAGE: todo-app
+  BACKEND_IMAGE: todo-backend
+  JOB_IMAGE: todo-cronjob
+  BRANCH: ${{ github.ref_name }}
+
+jobs:
+  build-publish-deploy:
+    name: Build, Publish and Deploy to GKE
+    runs-on: ubuntu-latest
+
+    steps:
+     - name: Checkout code
+       uses: actions/checkout@v4
+
+     - name: Authenticate to Google Cloud 
+       uses: google-github-actions/auth@v2
+       with:
+         credentials_json: '${{ secrets.GKE_SA_KEY }}'
+     
+     - name: Set up Cloud SDK
+       uses: google-github-actions/setup-gcloud@v2
+
+     - name: Configure Docker
+       run: gcloud --quiet auth configure-docker "$REGISTRY"
+     - name: Get GKE credentials
+       uses: google-github-actions/get-gke-credentials@v2
+       with:
+         cluster_name: ${{ env.GKE_CLUSTER }}
+         location: ${{ env.GKE_ZONE }}
+         project_id: ${{ env.PROJECT_ID }}
+
+     - name: Build and push Frontend image
+       run: |
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA ./todo-project/todo-app
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA
+        
+     - name: Build and push Backend image
+       run: |
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA ./todo-project/todo-backend
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
+
+     - name: Build and push Job image
+       run: |
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA ./todo-project/todo-job
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA 
+      
+     - name: Set up Kustomize
+       uses: imranismail/setup-kustomize@v2.1.0
+
+     - name: Install SOPS
+       run: |
+         wget https://github.com/getsops/sops/releases/download/v3.11.0/sops-v3.11.0.linux.amd64
+         sudo mv sops-v3.11.0.linux.amd64 /usr/local/bin/sops
+         sudo chmod +x /usr/local/bin/sops
+
+     - name: Decrypt secrets
+       run: |
+         echo "${{ secrets.SOPS_AGE_KEY }}" > /tmp/key.txt
+         export SOPS_AGE_KEY_FILE=/tmp/key.txt
+         sops -d ./todo-project/todo-backend/k8s/secret.enc.yaml > ./todo-project/todo-backend/k8s/secret.yaml
+
+     - name: Update image tags
+       run: |
+         cd ./todo-project
+         kustomize edit set image zanaad/todo-app=$REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA
+         kustomize edit set image zanaad/todo-backend=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
+         kustomize edit set image zanaad/todo-cronjob=$REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA
+
+     - name: Deploy with Kustomize
+       run: |
+         kubectl apply -k ./todo-project/

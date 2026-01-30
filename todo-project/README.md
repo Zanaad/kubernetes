@@ -65,3 +65,12 @@ http://<INGRESS-IP>/
 - **Database**: StatefulSet with encrypted secrets and persistent volumes
 - **Automation**: CronJob generates reading reminders hourly
 - **Configuration**: Kustomize for managing all resources together
+- **CI/CD**: GitHub Actions pipeline builds, pushes, and deploys to GKE on push
+
+## Deploy Pipeline
+
+This project includes an automated deployment pipeline via GitHub Actions. On each push, it:
+
+- builds and pushes images to Artifact Registry
+- updates Kustomize image tags
+- applies manifests to the GKE cluster
