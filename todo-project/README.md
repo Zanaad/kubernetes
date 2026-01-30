@@ -46,55 +46,16 @@ kubectl get ingress todo-app-ingress -n <namespace>
 
 Visit: `http://<INGRESS-IP>/`
 
-## 3.9 DBaaS vs DIY Database Comparison
+## Database Backups
 
-### Cloud SQL (DBaaS)
+**Backup Strategy**: Daily automated backups to Google Cloud Storage (GCS)
 
-**Pros**:
+**Setup**:
 
-- Automated backups with point-in-time recovery (no setup required)
-- Automatic patching and version upgrades
-- High availability with automatic failover
-- Zero maintenance overhead for DB infrastructure
-- Built-in monitoring and performance insights
-- Scales vertically with a click
+1. Create GCS bucket: `gsutil mb -l europe-west3 gs://<bucket-name>`
+2. Create service account with Storage Admin role
+3. Create Kubernetes secret: `kubectl create secret generic gcs-backup-key --from-file=key.json=<path-to-key> -n todo`
 
-**Cons**:
+**CronJob**: Runs daily at midnight, exports database with `pg_dump`, uploads to GCS with timestamp
 
-- Higher operational costs (managed service premium)
-- Vendor lock-in to GCP
-- Network latency (external to cluster)
-- Additional IAM and network configuration
-- Less control over DB configuration
-
-**Setup**: Cloud SQL instance + Cloud SQL Proxy sidecar, configure private IP or Cloud SQL Auth Proxy
-
-**Backups**: Automatic daily backups, configurable retention, one-click restore
-
----
-
-### Self-Managed Postgres (DIY)
-
-**Pros**:
-
-- Lower cost (only storage + compute overhead)
-- Full control over configuration and tuning
-- Runs inside cluster (lower latency)
-- No vendor lock-in (portable across clouds)
-- Simpler development setup (same config everywhere)
-
-**Cons**:
-
-- Manual backup configuration required
-- Responsible for patching and upgrades
-- Must handle HA/replication manually
-- StatefulSet complexity (storage classes, PVCs)
-- No built-in performance monitoring
-
-**Setup**: StatefulSet + PVC + secret management (current implementation)
-
-**Backups**: Manual setup via CronJob with `pg_dump` or volume snapshots, restore requires manual steps
-
----
-
-**Current Choice**: DIY Postgres StatefulSet with PersistentVolumes for simplicity and cost efficiency in development/testing environments. For production workloads with strict SLA requirements, Cloud SQL is recommended.
+**Restore**: Download backup from GCS and restore with `psql -U <user> -d <db> < backup.sql`

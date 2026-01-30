@@ -5,6 +5,7 @@ resources:
   - postgres-svc.yaml
   - deployment.yaml
   - service.yaml
+  - backup-cronjob.yaml
 images:
   - name: zanaad/todo-backend
     newTag: latest
