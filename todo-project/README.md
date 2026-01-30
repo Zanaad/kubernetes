@@ -1,76 +1,47 @@
 # Todo Project
 
-Complete todo application with frontend, backend, and scheduled tasks deployed to Google Kubernetes Engine using Kustomize.
+Production todo app deployed to GKE with automated CI/CD.
+
+**Stack**: Node.js, Postgres, GKE, Artifact Registry, GitHub Actions, Kustomize
 
 ## Architecture
 
-```
-todo-project/
-├── todo-app           — Frontend (Node.js + HTML/JS/CSS)
-├── todo-backend       — REST API (Node.js + Postgres)
-├── todo-job           — CronJob for Wikipedia reading reminders
-└── kustomization.yaml — Root Kustomize manifest
-```
+- **todo-app**: Frontend with image caching
+- **todo-backend**: REST API + Postgres StatefulSet
+- **todo-job**: Hourly Wikipedia reading reminder CronJob
 
-**Data Flow**:
+## CI/CD Pipelines
 
-- todo-app (port 3000) → proxies → todo-backend (port 3000) → Postgres StatefulSet
-- todo-job (hourly) → CronJob → POST /todos → todo-backend
+### Deploy (`.github/workflows/todo-deploy.yaml`)
 
-## Deploy to GKE with Kustomize
+- **Trigger**: Push to any branch
+- **Actions**: Build images → Push to Artifact Registry → Deploy to GKE
+- **Namespaces**: `main` → `todo`, other branches → `<branch-name>`
 
-```bash
-# Create namespace
-kubectl create namespace todo
-kubens todo
+### Cleanup (`.github/workflows/delete-env.yaml`)
 
-# Decrypt secrets
-sops -d todo-backend/k8s/secret.enc.yaml | kubectl apply -f -
+- **Trigger**: Branch deletion
+- **Actions**: Deletes namespace (except `main`)
 
-# Deploy all components with Kustomize
-kubectl apply -k .
-```
+**Required Secrets**: `GKE_PROJECT`, `GKE_SA_KEY`, `SOPS_AGE_KEY`
 
-Check status:
+## Deployment
+
+**Cluster**: `dwk-cluster` (europe-west3-b)
+
+**Deploy manually**:
 
 ```bash
-kubectl get pods
-kubectl get svc
+gcloud container clusters get-credentials dwk-cluster --zone europe-west3-b
+kubectl create namespace <namespace>
+sops -d todo-backend/k8s/secret.enc.yaml | kubectl apply -n <namespace> -f -
+cd todo-project && kustomize edit set namespace <namespace> && kustomize build . | kubectl apply -f -
 ```
 
-## Components
-
-- [todo-app](todo-app/README.md) — Frontend proxy with caching
-- [todo-backend](todo-backend/README.md) — REST API with request logging and 140-char validation
-- [todo-job](todo-job/README.md) — CronJob for Wikipedia article todos
-
-## Access
-
-Get the Ingress IP:
+**Access**:
 
 ```bash
-kubectl get ingress todo-app-ingress -n todo
+kubectl get ingress todo-app-ingress -n <namespace>
 ```
 
-Then access todo-app via:
-
-```
-http://<INGRESS-IP>/
-```
-
-## Features
-
-- **Frontend**: Static UI with live todo counter
-- **Backend**: Postgres-backed REST API with JSON logging
-- **Database**: StatefulSet with encrypted secrets and persistent volumes
-- **Automation**: CronJob generates reading reminders hourly
-- **Configuration**: Kustomize for managing all resources together
-- **CI/CD**: GitHub Actions pipeline builds, pushes, and deploys to GKE on push
-
-## Deploy Pipeline
-
-This project includes an automated deployment pipeline via GitHub Actions. On each push, it:
-
-- builds and pushes images to Artifact Registry
-- updates Kustomize image tags
-- applies manifests to the GKE cluster
+Visit: `http://<INGRESS-IP>/`
