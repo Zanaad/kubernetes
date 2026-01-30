@@ -27,6 +27,13 @@ spec:
               mountPath: /var/lib/data
           ports:
           - containerPort: 3000
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
           env:
             - name: PORT
               value: "3000"
