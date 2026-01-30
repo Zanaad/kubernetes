@@ -59,3 +59,32 @@ Visit: `http://<INGRESS-IP>/`
 **CronJob**: Runs daily at midnight, exports database with `pg_dump`, uploads to GCS with timestamp
 
 **Restore**: Download backup from GCS and restore with `psql -U <user> -d <db> < backup.sql`
+
+## Monitoring & Logging
+
+**GKE Observability** (enabled by default):
+
+- **Cloud Logging**: View pod logs and application events
+- **Cloud Monitoring**: Track CPU, memory, and custom metrics
+- **Dashboards**: Pre-built GKE dashboards available
+
+**View Logs**:
+
+1. Go to Cloud Console → **Logs Explorer**
+2. Use query:
+
+```
+resource.type="k8s_container"
+resource.labels.namespace_name="todo"
+resource.labels.pod_name=~"todo-backend.*"
+```
+
+3. See JSON logs for todos: `{"event":"createTodo", "outcome":"success", "text":"...", "length":65}`
+
+**View Metrics**:
+
+1. Go to Cloud Console → **Cloud Monitoring**
+2. View **GKE Dashboards** for CPU, memory, pod count
+3. Check resource requests vs actual usage with `kubectl top pods -n todo`
+
+![Cloud Logging](image.png)
