@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - "**"
     paths:
       - 'todo-project/**'
       - '.github/workflows/todo-deploy.yaml'
@@ -37,7 +38,8 @@ jobs:
        uses: google-github-actions/setup-gcloud@v2
 
      - name: Configure Docker
-       run: gcloud --quiet auth configure-docker "$REGISTRY"
+       run: |
+        gcloud auth configure-docker europe-west3-docker.pkg.dev --quiet
      - name: Get GKE credentials
        uses: google-github-actions/get-gke-credentials@v2
        with:
@@ -69,19 +71,31 @@ jobs:
          sudo mv sops-v3.11.0.linux.amd64 /usr/local/bin/sops
          sudo chmod +x /usr/local/bin/sops
 
-     - name: Decrypt secrets
-       run: |
-         echo "${{ secrets.SOPS_AGE_KEY }}" > /tmp/key.txt
-         export SOPS_AGE_KEY_FILE=/tmp/key.txt
-         sops -d ./todo-project/todo-backend/k8s/secret.enc.yaml > ./todo-project/todo-backend/k8s/secret.yaml
-
-     - name: Update image tags
-       run: |
-         cd ./todo-project
-         kustomize edit set image zanaad/todo-app=$REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA
-         kustomize edit set image zanaad/todo-backend=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
-         kustomize edit set image zanaad/todo-cronjob=$REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA
-
      - name: Deploy with Kustomize
        run: |
-         kubectl apply -k ./todo-project/
+        if [[ "$BRANCH" == "main" ]]; then
+            NAMESPACE="todo"
+        else
+            NAMESPACE="$BRANCH"
+        fi
+
+        echo "Deploying to namespace: $NAMESPACE"
+
+        kubectl create namespace $NAMESPACE || true
+        kubectl config set-context --current --namespace=$NAMESPACE
+        
+        echo "${{ secrets.SOPS_AGE_KEY }}" > /tmp/key.txt
+        export SOPS_AGE_KEY_FILE=/tmp/key.txt
+        sops -d ./todo-project/todo-backend/k8s/secret.enc.yaml | kubectl apply -n $NAMESPACE -f -
+        
+        cd ./todo-project
+        
+        kustomize edit set image zanaad/todo-app=$REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA
+        kustomize edit set image zanaad/todo-backend=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
+        kustomize edit set image zanaad/todo-cronjob=$REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA
+        
+        kustomize edit set namespace $NAMESPACE
+        kustomize build . | kubectl apply -f -
+
+        kubectl rollout status deployment/todo-backend -n $NAMESPACE
+        kubectl rollout status deployment/todo-app -n $NAMESPACE
