@@ -77,7 +77,27 @@ function parseRequestBody(req) {
 }
 
 const server = http.createServer(async (req, res) => {
-  if (req.url === "/todos" && req.method === "GET") {
+  if (req.url === "/healthz" && req.method === "GET") {
+    // Liveness probe: simple health check
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("OK");
+    return;
+  } else if (req.url === "/readyz" && req.method === "GET") {
+    // Readiness probe: check if database is ready
+    try {
+      await pool.query("SELECT 1");
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("Ready");
+    } catch (err) {
+      console.error(
+        "Readiness check failed - database not ready:",
+        err.message,
+      );
+      res.writeHead(503, { "Content-Type": "text/plain" });
+      res.end("Not Ready - Database connection failed");
+    }
+    return;
+  } else if (req.url === "/todos" && req.method === "GET") {
     try {
       const todos = await getTodos();
       return sendJson(res, 200, todos);
@@ -113,6 +133,7 @@ const server = http.createServer(async (req, res) => {
 
   res.writeHead(404, { "Content-Type": "text/plain" });
   res.end("Not Found\n");
+  return;
 });
 
 async function start() {

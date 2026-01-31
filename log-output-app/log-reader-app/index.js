@@ -85,17 +85,20 @@ async function checkPingPongService() {
 
 const server = http.createServer(async (req, res) => {
   if (req.url === "/healthz" && req.method === "GET") {
+    // Liveness probe: simple health check
+    res.writeHead(200);
+    res.end("OK");
+  } else if (req.url === "/readyz" && req.method === "GET") {
+    // Readiness probe: check if ping-pong is reachable
     try {
       await checkPingPongService();
-      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.writeHead(200);
       res.end("Ready");
     } catch (err) {
-      res.writeHead(503, { "Content-Type": "text/plain" });
+      res.writeHead(503);
       res.end("Ping-pong not ready");
     }
-    return;
-  }
-  if (req.url === "/" && req.method === "GET") {
+  } else if (req.url === "/" && req.method === "GET") {
     try {
       const logEntry = await getLogEntry();
       const pongCount = await getPingPongCount();

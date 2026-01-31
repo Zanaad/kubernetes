@@ -15,12 +15,18 @@ spec:
     spec:
       containers:
         - name: ping-pong-app
-          image: zanaad/ping-pong-app:latest
+          image: zanaad/ping-pong-app:v1
           ports:
             - containerPort: 3000
-          readinessProbe:
+          livenessProbe:
             httpGet:
               path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 5

@@ -181,7 +181,41 @@ function proxyPostTodos(req, res) {
 const htmlContent = fs.readFileSync(INDEX_PATH, "utf8");
 
 const server = http.createServer((req, res) => {
-  if (req.url === "/" && req.method === "GET") {
+  if (req.url === "/healthz" && req.method === "GET") {
+    // Liveness probe: simple health check
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("OK");
+  } else if (req.url === "/readyz" && req.method === "GET") {
+    // Readiness probe: check if backend is reachable
+    return new Promise((resolve) => {
+      const backendUrl = new URL(TODO_BACKEND_URL);
+      http
+        .get(
+          {
+            hostname: backendUrl.hostname,
+            port: backendUrl.port || 80,
+            path: "/todos",
+            timeout: 2000,
+          },
+          (response) => {
+            if (response.statusCode === 200) {
+              res.writeHead(200, { "Content-Type": "text/plain" });
+              res.end("Ready");
+            } else {
+              res.writeHead(503, { "Content-Type": "text/plain" });
+              res.end("Not Ready - Backend not available");
+            }
+            resolve();
+          },
+        )
+        .on("error", (err) => {
+          console.error("Readiness check failed - backend not reachable:", err.message);
+          res.writeHead(503, { "Content-Type": "text/plain" });
+          res.end("Not Ready - Cannot reach backend");
+          resolve();
+        });
+    });
+  } else if (req.url === "/" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(htmlContent);
   } else if (req.url === "/todos" && req.method === "GET") {

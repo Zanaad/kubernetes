@@ -15,9 +15,21 @@ spec:
     spec:
       containers:
         - name: todo-backend
-          image: zanaad/todo-backend:latest
+          image: zanaad/todo-backend
           ports:
             - containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
           resources:
             requests:
               cpu: "100m"
