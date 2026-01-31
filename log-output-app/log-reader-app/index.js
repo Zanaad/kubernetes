@@ -65,7 +65,36 @@ async function getPingPongCount() {
   });
 }
 
+async function checkPingPongService() {
+  return new Promise((resolve, reject) => {
+    const url = new URL(`${PING_PONG_SERVICE}/count`);
+
+    http
+      .get(url, (response) => {
+        if (response.statusCode === 200) {
+          resolve(true);
+        } else {
+          reject(new Error(`Status code ${response.statusCode}`));
+        }
+      })
+      .on("error", (err) => {
+        reject(err);
+      });
+  });
+}
+
 const server = http.createServer(async (req, res) => {
+  if (req.url === "/healthz" && req.method === "GET") {
+    try {
+      await checkPingPongService();
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("Ready");
+    } catch (err) {
+      res.writeHead(503, { "Content-Type": "text/plain" });
+      res.end("Ping-pong not ready");
+    }
+    return;
+  }
   if (req.url === "/" && req.method === "GET") {
     try {
       const logEntry = await getLogEntry();

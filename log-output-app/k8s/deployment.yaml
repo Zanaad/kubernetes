@@ -25,6 +25,12 @@ spec:
           image: zanaad/log-reader-app:latest
           ports:
             - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
           env:
             - name: PORT
               value: "3000"

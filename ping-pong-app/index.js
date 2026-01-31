@@ -47,8 +47,19 @@ async function incrementCounter() {
 
 const server = http.createServer(async (req, res) => {
   if (req.url === "/healthz" && req.method === "GET") {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("OK");
+    // Readiness probe: check if database connection is ready
+    try {
+      await pool.query("SELECT 1");
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("Ready");
+    } catch (err) {
+      console.error(
+        "Readiness check failed - database not ready:",
+        err.message,
+      );
+      res.writeHead(503, { "Content-Type": "text/plain" });
+      res.end("Not Ready - Database connection failed");
+    }
   } else if (req.url === "/" && req.method === "GET") {
     try {
       const currentCount = await getCounter();
