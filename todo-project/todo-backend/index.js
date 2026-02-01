@@ -16,7 +16,8 @@ async function initDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS todos (
         id BIGINT PRIMARY KEY,
-        text TEXT NOT NULL
+        text TEXT NOT NULL,
+        done BOOLEAN DEFAULT FALSE
       )
     `);
     console.log("Todos table initialized");
@@ -27,8 +28,14 @@ async function initDatabase() {
 }
 
 async function getTodos() {
-  const result = await pool.query("SELECT id, text FROM todos ORDER BY id ASC");
+  const result = await pool.query(
+    "SELECT id, text, done FROM todos ORDER BY id ASC",
+  );
   return result.rows;
+}
+
+async function setTodoDone(id) {
+  await pool.query("UPDATE todos SET done = TRUE WHERE id = $1", [id]);
 }
 
 async function createTodo(id, text) {
@@ -128,6 +135,21 @@ const server = http.createServer(async (req, res) => {
     } catch (err) {
       console.error("Failed to create todo", err);
       return sendJson(res, 400, { error: "invalid JSON" });
+    }
+  }
+
+  // Mark todo as done
+  if (req.url.startsWith("/todos/") && req.method === "PUT") {
+    const id = req.url.split("/")[2];
+    if (!id) {
+      return sendJson(res, 400, { error: "Missing todo id" });
+    }
+    try {
+      await setTodoDone(id);
+      return sendJson(res, 200, { success: true });
+    } catch (err) {
+      console.error("Failed to mark todo as done", err);
+      return sendJson(res, 500, { error: "Failed to update todo" });
     }
   }
 

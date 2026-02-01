@@ -178,6 +178,31 @@ function proxyPostTodos(req, res) {
   });
 }
 
+function proxyPutTodo(req, res, id) {
+  const url = new URL(`/todos/${id}`, TODO_BACKEND_URL);
+
+  const backendReq = http.request(url, { method: "PUT" }, (backendRes) => {
+    let data = "";
+
+    backendRes.on("data", (chunk) => (data += chunk));
+    backendRes.on("end", () => {
+      res.writeHead(backendRes.statusCode || 500, {
+        "Content-Type":
+          backendRes.headers["content-type"] || "application/json",
+      });
+      res.end(data);
+    });
+  });
+
+  backendReq.on("error", (err) => {
+    console.error("Failed to mark todo as done", err);
+    res.writeHead(502, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Failed to reach todo-backend" }));
+  });
+
+  backendReq.end();
+}
+
 const htmlContent = fs.readFileSync(INDEX_PATH, "utf8");
 
 const server = http.createServer((req, res) => {
@@ -209,7 +234,10 @@ const server = http.createServer((req, res) => {
           },
         )
         .on("error", (err) => {
-          console.error("Readiness check failed - backend not reachable:", err.message);
+          console.error(
+            "Readiness check failed - backend not reachable:",
+            err.message,
+          );
           res.writeHead(503, { "Content-Type": "text/plain" });
           res.end("Not Ready - Cannot reach backend");
           resolve();
@@ -222,6 +250,9 @@ const server = http.createServer((req, res) => {
     proxyGetTodos(res);
   } else if (req.url === "/todos" && req.method === "POST") {
     proxyPostTodos(req, res);
+  } else if (req.url.startsWith("/todos/") && req.method === "PUT") {
+    const id = req.url.split("/")[2];
+    proxyPutTodo(req, res, id);
   } else if (req.url === "/image" && req.method === "GET") {
     getImage((err, imageData) => {
       if (err) {
