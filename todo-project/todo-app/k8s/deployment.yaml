@@ -21,7 +21,7 @@ spec:
             claimName: todo-pvc
       containers:
         - name: todo-app
-          image: zanaad/todo-app
+          image: TODO_APP_IMAGE
           volumeMounts:
             - name: todo-volume
               mountPath: /var/lib/data

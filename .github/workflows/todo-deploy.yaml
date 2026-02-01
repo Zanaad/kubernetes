@@ -97,10 +97,10 @@ jobs:
         
         cd ./todo-project
         
-        kustomize edit set image zanaad/todo-app=$REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA
-        kustomize edit set image zanaad/todo-backend=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
-        kustomize edit set image zanaad/todo-cronjob=$REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA
-        kustomize edit set image zanaad/broadcaster=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:$BRANCH-$GITHUB_SHA
+        kustomize edit set image TODO_APP_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA
+        kustomize edit set image TODO_BACKEND_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
+        kustomize edit set image TODO_JOB_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA
+        kustomize edit set image BROADCASTER_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:$BRANCH-$GITHUB_SHA
         
         kustomize edit set namespace $NAMESPACE
         kustomize build . | kubectl apply -f -

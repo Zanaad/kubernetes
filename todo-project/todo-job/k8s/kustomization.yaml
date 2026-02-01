@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
   - cronjob.yaml
 images:
-  - name: zanaad/todo-cronjob
+  - name: TODO_JOB_IMAGE
+    newName: zanaad/todo-cronjob
     newTag: latest

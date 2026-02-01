@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: broadcaster
-        image: zanaad/broadcaster:latest
+        image: BROADCASTER_IMAGE
         imagePullPolicy: Always
         env:
         - name: NATS_URL

@@ -47,3 +47,25 @@ kubectl get gateway log-output-gateway
 
 - `http://<GATEWAY-IP>/` - log-output with aggregated logs and pong count
 - `http://<GATEWAY-IP>/pingpong` - ping-pong counter
+
+## GitOps with ArgoCD
+
+This application is managed using **ArgoCD** with automatic sync enabled.
+
+**Status:** ✅ Connected and synced to GitHub repository
+
+When you push changes to Kubernetes manifests in the repository:
+
+- ArgoCD automatically detects changes (within ~3 minutes)
+- Applies them to the cluster without manual intervention
+- No CI/CD pipeline needed for manifest updates
+
+**To make changes:**
+
+1. Edit any file in `k8s/` directory (e.g., change replicas in `deployment.yaml`)
+2. Commit and push to GitHub
+3. ArgoCD automatically syncs the changes to the cluster
+
+**View sync status:** Check ArgoCD dashboard for real-time deployment status and resource tree.
+
+![ArgoCD](ArgoCD.png)

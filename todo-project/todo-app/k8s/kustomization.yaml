@@ -7,5 +7,6 @@ resources:
   - configmap.yaml
   - ingress.yaml
 images:
-  - name: zanaad/todo-app
+  - name: TODO_APP_IMAGE
+    newName: zanaad/todo-app
     newTag: latest

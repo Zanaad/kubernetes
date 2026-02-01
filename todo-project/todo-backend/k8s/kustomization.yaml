@@ -7,5 +7,6 @@ resources:
   - service.yaml
   - backup-cronjob.yaml
 images:
-  - name: zanaad/todo-backend
+  - name: TODO_BACKEND_IMAGE
+    newName: zanaad/todo-backend
     newTag: latest

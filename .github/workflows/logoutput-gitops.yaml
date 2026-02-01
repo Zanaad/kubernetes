@@ -1,0 +1,48 @@
+name: Build and Publish Log Output App
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'log-output-app/**'
+
+jobs:
+  build-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push log-reader
+        run: |
+          cd log-output-app/log-reader-app
+          docker build -t zanaad/log-reader-app:$GITHUB_SHA .
+          docker push zanaad/log-reader-app:$GITHUB_SHA
+      
+      - name: Build and push log-writer
+        run: |
+          cd log-output-app/log-writer-app
+          docker build -t zanaad/log-writer-app:$GITHUB_SHA .
+          docker push zanaad/log-writer-app:$GITHUB_SHA
+      
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v2
+      
+      - name: Update images
+        run: |
+          cd log-output-app/k8s
+          kustomize edit set image READER_IMAGE=zanaad/log-reader-app:$GITHUB_SHA
+          kustomize edit set image WRITER_IMAGE=zanaad/log-writer-app:$GITHUB_SHA
+      
+      - name: Commit kustomization
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: 'log-output-app/k8s/kustomization.yaml'
+          message: 'Update log-output images to ${{ github.sha }}'

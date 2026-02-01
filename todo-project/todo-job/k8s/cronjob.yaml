@@ -11,5 +11,5 @@ spec:
         spec:
           containers:
             - name: todo-cronjob
-              image: zanaad/todo-cronjob:latest
+              image: TODO_JOB_IMAGE
           restartPolicy: OnFailure
