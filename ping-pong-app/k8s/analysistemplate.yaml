@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: ping-pong-cpu-usage
+  namespace: log-pong
+spec:
+  metrics:
+  - name: cpu-usage
+    initialDelay: 30s
+    interval: 30s
+    count: 10  # Check 10 times over ~5 minutes
+    successCondition: "result < 100"  # CPU usage must stay below 100m (millicores) on average
+    provider:
+      prometheus:
+        address: http://kube-prometheus-stack-1714-prometheus.prometheus.svc.cluster.local:9090
+        query: |
+          scalar(
+            sum(rate(container_cpu_usage_seconds_total{namespace="log-pong",container="ping-pong-app"}[1m]))
+          ) * 1000
+  - name: memory-usage
+    initialDelay: 30s
+    successCondition: "result < 200"  # Memory usage must stay below 200Mi on average
+    provider:
+      prometheus:
+        address: http://kube-prometheus-stack-1714-prometheus.prometheus.svc.cluster.local:9090
+        query: |
+          scalar(
+            sum(container_memory_usage_bytes{namespace="log-pong",container="ping-pong-app"})
+          ) / 1024 / 1024
