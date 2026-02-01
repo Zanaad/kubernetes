@@ -6,8 +6,9 @@ const NATS_URL =
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
 if (!DISCORD_WEBHOOK_URL) {
-  console.error("ERROR: DISCORD_WEBHOOK_URL environment variable is required");
-  process.exit(1);
+  console.log(
+    "DISCORD_WEBHOOK_URL not set - broadcaster will only log messages",
+  );
 }
 
 async function main() {
@@ -57,6 +58,14 @@ async function handleTodoMessage(msg, action) {
     const data = JSON.parse(new TextDecoder().decode(msg.data));
 
     console.log(`Received todo.${action} event:`, data);
+
+    // If no Discord webhook, just log and return
+    if (!DISCORD_WEBHOOK_URL) {
+      console.log(
+        `[STAGING] Would send to Discord - Task: ${data.task || "N/A"}, Done: ${data.done}`,
+      );
+      return;
+    }
 
     // Create Discord embed message
     const embed = {

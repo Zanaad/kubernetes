@@ -4,10 +4,11 @@ on:
   push:
     branches:
       - main
-      - "**"
     paths:
       - 'todo-project/**'
       - '.github/workflows/todo-deploy.yaml'
+    tags:
+      - 'v*'
 
 env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
@@ -19,11 +20,11 @@ env:
   BACKEND_IMAGE: todo-backend
   BROADCASTER_IMAGE: broadcaster
   JOB_IMAGE: todo-cronjob
-  BRANCH: ${{ github.ref_name }}
 
 jobs:
-  build-publish-gitops:
-    name: Build, Publish and Update GitOps
+  build-publish-staging:
+    name: Build and Deploy to Staging
+    if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
 
     steps:
@@ -44,40 +45,105 @@ jobs:
 
      - name: Build and push Frontend image
        run: |
-         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA ./todo-project/todo-app
-         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:staging-$GITHUB_SHA ./todo-project/base/todo-app
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:staging-$GITHUB_SHA
         
      - name: Build and push Backend image
        run: |
-         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA ./todo-project/todo-backend
-         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:staging-$GITHUB_SHA ./todo-project/base/todo-backend
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:staging-$GITHUB_SHA
 
      - name: Build and push Broadcaster image
        run: |
-         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:$BRANCH-$GITHUB_SHA ./todo-project/broadcaster
-         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:$BRANCH-$GITHUB_SHA
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:staging-$GITHUB_SHA ./todo-project/base/broadcaster
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:staging-$GITHUB_SHA
 
      - name: Build and push Job image
        run: |
-         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA ./todo-project/todo-job
-         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA 
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:staging-$GITHUB_SHA ./todo-project/base/todo-job
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:staging-$GITHUB_SHA 
       
      - name: Set up Kustomize
        uses: imranismail/setup-kustomize@v2.1.0
 
-     - name: Update image tags in kustomization files
+     - name: Update staging image tags
        run: |
-        cd ./todo-project
+        cd ./todo-project/overlays/staging
         
-        kustomize edit set image TODO_APP_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA
-        kustomize edit set image TODO_BACKEND_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
-        kustomize edit set image TODO_JOB_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA
-        kustomize edit set image BROADCASTER_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:$BRANCH-$GITHUB_SHA
+        kustomize edit set image TODO_APP_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:staging-$GITHUB_SHA
+        kustomize edit set image TODO_BACKEND_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:staging-$GITHUB_SHA
+        kustomize edit set image TODO_JOB_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:staging-$GITHUB_SHA
+        kustomize edit set image BROADCASTER_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:staging-$GITHUB_SHA
 
-     - name: Commit updated kustomization files
+     - name: Commit staging kustomization
        uses: EndBug/add-and-commit@v9
        with:
-         add: 'todo-project/kustomization.yaml'
-         message: 'Update todo-project images to ${{ github.sha }}'
+         add: 'todo-project/overlays/staging/kustomization.yaml'
+         message: 'Update staging images to ${{ github.sha }}'
+         pull: '--rebase --autostash'
+         default_author: github_actions
+
+  build-publish-production:
+    name: Build and Deploy to Production
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+     - name: Checkout code
+       uses: actions/checkout@v4
+
+     - name: Get tag name
+       id: tag
+       run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+     - name: Authenticate to Google Cloud 
+       uses: google-github-actions/auth@v2
+       with:
+         credentials_json: '${{ secrets.GKE_SA_KEY }}'
+     
+     - name: Set up Cloud SDK
+       uses: google-github-actions/setup-gcloud@v2
+
+     - name: Configure Docker
+       run: |
+        gcloud auth configure-docker europe-west3-docker.pkg.dev --quiet
+
+     - name: Build and push Frontend image
+       run: |
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:${{ steps.tag.outputs.TAG }} ./todo-project/base/todo-app
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:${{ steps.tag.outputs.TAG }}
+        
+     - name: Build and push Backend image
+       run: |
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:${{ steps.tag.outputs.TAG }} ./todo-project/base/todo-backend
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:${{ steps.tag.outputs.TAG }}
+
+     - name: Build and push Broadcaster image
+       run: |
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:${{ steps.tag.outputs.TAG }} ./todo-project/base/broadcaster
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:${{ steps.tag.outputs.TAG }}
+
+     - name: Build and push Job image
+       run: |
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:${{ steps.tag.outputs.TAG }} ./todo-project/base/todo-job
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:${{ steps.tag.outputs.TAG }} 
+      
+     - name: Set up Kustomize
+       uses: imranismail/setup-kustomize@v2.1.0
+
+     - name: Update production image tags
+       run: |
+        cd ./todo-project/overlays/prod
+        
+        kustomize edit set image TODO_APP_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:${{ steps.tag.outputs.TAG }}
+        kustomize edit set image TODO_BACKEND_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:${{ steps.tag.outputs.TAG }}
+        kustomize edit set image TODO_JOB_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:${{ steps.tag.outputs.TAG }}
+        kustomize edit set image BROADCASTER_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:${{ steps.tag.outputs.TAG }}
+
+     - name: Commit production kustomization
+       uses: EndBug/add-and-commit@v9
+       with:
+         add: 'todo-project/overlays/prod/kustomization.yaml'
+         message: 'Update production images to ${{ steps.tag.outputs.TAG }}'
          pull: '--rebase --autostash'
          default_author: github_actions

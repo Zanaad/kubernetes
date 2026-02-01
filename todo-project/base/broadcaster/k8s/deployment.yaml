@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: broadcaster
-  namespace: todo
 spec:
   replicas: 2
   strategy:

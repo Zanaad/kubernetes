@@ -2,7 +2,6 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: postgres-backup
-  namespace: todo
 spec:
   schedule: "0 0 * * *"  # Daily at midnight
   successfulJobsHistoryLimit: 3
