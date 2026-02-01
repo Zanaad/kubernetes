@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'log-output-app/**'
+      - '.github/workflows/logoutput-gitops.yaml'
 
 jobs:
   build-publish:
@@ -23,14 +24,14 @@ jobs:
       - name: Build and push log-reader
         run: |
           cd log-output-app/log-reader-app
-          docker build -t zanaad/log-reader-app:$GITHUB_SHA .
-          docker push zanaad/log-reader-app:$GITHUB_SHA
+          docker build -t zanaad/log-reader-app:${GITHUB_SHA} .
+          docker push zanaad/log-reader-app:${GITHUB_SHA}
       
       - name: Build and push log-writer
         run: |
           cd log-output-app/log-writer-app
-          docker build -t zanaad/log-writer-app:$GITHUB_SHA .
-          docker push zanaad/log-writer-app:$GITHUB_SHA
+          docker build -t zanaad/log-writer-app:${GITHUB_SHA} .
+          docker push zanaad/log-writer-app:${GITHUB_SHA}
       
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v2
@@ -38,8 +39,8 @@ jobs:
       - name: Update images
         run: |
           cd log-output-app/k8s
-          kustomize edit set image READER_IMAGE=zanaad/log-reader-app:$GITHUB_SHA
-          kustomize edit set image WRITER_IMAGE=zanaad/log-writer-app:$GITHUB_SHA
+          kustomize edit set image READER_IMAGE=zanaad/log-reader-app:${GITHUB_SHA}
+          kustomize edit set image WRITER_IMAGE=zanaad/log-writer-app:${GITHUB_SHA}
       
       - name: Commit kustomization
         uses: EndBug/add-and-commit@v9

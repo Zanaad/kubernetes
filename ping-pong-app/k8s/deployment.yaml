@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: ping-pong-app
-          image: zanaad/ping-pong-app:v1
+          image: PING_PONG_IMAGE
           ports:
             - containerPort: 3000
           livenessProbe:
