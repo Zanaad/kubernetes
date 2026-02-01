@@ -10,6 +10,7 @@ patches:
 - path: broadcaster-patch.yaml
 - path: todo-backend-patch.yaml
 - path: postgres-patch.yaml
+- path: backend-nats-patch.yaml
 
 images:
 - name: BROADCASTER_IMAGE
