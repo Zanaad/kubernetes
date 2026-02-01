@@ -12,7 +12,7 @@ spec:
     successCondition: "result < 100"  # CPU usage must stay below 100m (millicores) on average
     provider:
       prometheus:
-        address: http://kube-prometheus-stack-1714-prometheus.prometheus.svc.cluster.local:9090
+        address: http://kube-prometheus-stack-1769-prometheus.prometheus.svc.cluster.local:9090
         query: |
           scalar(
             sum(rate(container_cpu_usage_seconds_total{namespace="log-pong",container="ping-pong-app"}[1m]))
@@ -22,7 +22,7 @@ spec:
     successCondition: "result < 200"  # Memory usage must stay below 200Mi on average
     provider:
       prometheus:
-        address: http://kube-prometheus-stack-1714-prometheus.prometheus.svc.cluster.local:9090
+        address: http://kube-prometheus-stack-1769-prometheus.prometheus.svc.cluster.local:9090
         query: |
           scalar(
             sum(container_memory_usage_bytes{namespace="log-pong",container="ping-pong-app"})
