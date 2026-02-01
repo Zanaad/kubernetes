@@ -22,8 +22,8 @@ env:
   BRANCH: ${{ github.ref_name }}
 
 jobs:
-  build-publish-deploy:
-    name: Build, Publish and Deploy to GKE
+  build-publish-gitops:
+    name: Build, Publish and Update GitOps
     runs-on: ubuntu-latest
 
     steps:
@@ -41,12 +41,6 @@ jobs:
      - name: Configure Docker
        run: |
         gcloud auth configure-docker europe-west3-docker.pkg.dev --quiet
-     - name: Get GKE credentials
-       uses: google-github-actions/get-gke-credentials@v2
-       with:
-         cluster_name: ${{ env.GKE_CLUSTER }}
-         location: ${{ env.GKE_ZONE }}
-         project_id: ${{ env.PROJECT_ID }}
 
      - name: Build and push Frontend image
        run: |
@@ -71,40 +65,18 @@ jobs:
      - name: Set up Kustomize
        uses: imranismail/setup-kustomize@v2.1.0
 
-     - name: Install SOPS
+     - name: Update image tags in kustomization files
        run: |
-         wget https://github.com/getsops/sops/releases/download/v3.11.0/sops-v3.11.0.linux.amd64
-         sudo mv sops-v3.11.0.linux.amd64 /usr/local/bin/sops
-         sudo chmod +x /usr/local/bin/sops
-
-     - name: Deploy with Kustomize
-       run: |
-        if [[ "$BRANCH" == "main" ]]; then
-            NAMESPACE="todo"
-        else
-            NAMESPACE="$BRANCH"
-        fi
-
-        echo "Deploying to namespace: $NAMESPACE"
-
-        kubectl create namespace $NAMESPACE || true
-        kubectl config set-context --current --namespace=$NAMESPACE
-        
-        echo "${{ secrets.SOPS_AGE_KEY }}" > /tmp/key.txt
-        export SOPS_AGE_KEY_FILE=/tmp/key.txt
-        sops -d ./todo-project/todo-backend/k8s/secret.enc.yaml | kubectl apply -n $NAMESPACE -f -
-        sops -d ./todo-project/broadcaster/k8s/secret.enc.yaml | kubectl apply -n $NAMESPACE -f -
-        
         cd ./todo-project
         
         kustomize edit set image TODO_APP_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA
         kustomize edit set image TODO_BACKEND_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
         kustomize edit set image TODO_JOB_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA
         kustomize edit set image BROADCASTER_IMAGE=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:$BRANCH-$GITHUB_SHA
-        
-        kustomize edit set namespace $NAMESPACE
-        kustomize build . | kubectl apply -f -
 
-        kubectl rollout status deployment/todo-backend -n $NAMESPACE
-        kubectl rollout status deployment/todo-app -n $NAMESPACE
-        kubectl rollout status deployment/broadcaster -n $NAMESPACE
+     - name: Commit updated kustomization files
+       uses: EndBug/add-and-commit@v9
+       with:
+         add: 'todo-project/kustomization.yaml'
+         message: 'Update todo-project images to ${{ github.sha }}'
+         default_author: github_actions

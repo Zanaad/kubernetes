@@ -5,3 +5,16 @@ resources:
   - todo-app/k8s
   - todo-job/k8s
   - broadcaster/k8s
+images:
+  - name: TODO_APP_IMAGE
+    newName: zanaad/todo-app
+    newTag: latest
+  - name: TODO_BACKEND_IMAGE
+    newName: zanaad/todo-backend
+    newTag: latest
+  - name: BROADCASTER_IMAGE
+    newName: zanaad/broadcaster
+    newTag: latest
+  - name: TODO_JOB_IMAGE
+    newName: zanaad/todo-cronjob
+    newTag: latest

@@ -1,47 +1,90 @@
 # Todo Project
 
-Production todo app deployed to GKE with automated CI/CD.
+Production todo app with GitOps deployment using ArgoCD.
 
-**Stack**: Node.js, Postgres, GKE, Artifact Registry, GitHub Actions, Kustomize
+**Stack**: Node.js, Postgres, NATS, Discord, GKE, Artifact Registry, GitHub Actions, Kustomize, ArgoCD
 
 ## Architecture
 
 - **todo-app**: Frontend with image caching
-- **todo-backend**: REST API + Postgres StatefulSet
+- **todo-backend**: REST API + Postgres StatefulSet + NATS publisher
+- **broadcaster**: NATS subscriber → Discord webhook notifications
 - **todo-job**: Hourly Wikipedia reading reminder CronJob
+
+## GitOps with ArgoCD
+
+**Status:** ✅ Fully automated GitOps deployment enabled
+
+### Workflow
+
+```
+Code Push → GitHub Actions builds images → Updates kustomization.yaml → ArgoCD syncs → Deployed
+```
+
+1. **Developer** pushes code to `main` branch
+2. **GitHub Actions** builds Docker images with commit SHA tags
+3. **GitHub Actions** pushes images to Google Artifact Registry
+4. **GitHub Actions** updates `kustomization.yaml` with new image tags
+5. **GitHub Actions** commits changes back to repository
+6. **ArgoCD** detects changes (auto-sync enabled)
+7. **ArgoCD** deploys new images to cluster automatically
+
+**No manual `kubectl apply` needed!**
+
+### ArgoCD Application
+
+- **Repository**: GitHub kubernetes repo
+- **Path**: `todo-project`
+- **Sync Policy**: Automatic
+- **Namespace**: `todo`
+- **Sync Frequency**: ~3 minutes
 
 ## CI/CD Pipelines
 
 ### Deploy (`.github/workflows/todo-deploy.yaml`)
 
-- **Trigger**: Push to any branch
-- **Actions**: Build images → Push to Artifact Registry → Deploy to GKE
-- **Namespaces**: `main` → `todo`, other branches → `<branch-name>`
+- **Trigger**: Push to `main` (or any branch)
+- **Actions**:
+  - Build all 4 images (app, backend, broadcaster, job)
+  - Push to Artifact Registry with tag `<branch>-<commit-sha>`
+  - Update kustomization.yaml with new image references
+  - Commit to repository
+- **ArgoCD**: Auto-syncs changes to cluster
 
 ### Cleanup (`.github/workflows/delete-env.yaml`)
 
 - **Trigger**: Branch deletion
 - **Actions**: Deletes namespace (except `main`)
 
-**Required Secrets**: `GKE_PROJECT`, `GKE_SA_KEY`, `SOPS_AGE_KEY`
+**Required Secrets**: `GKE_PROJECT`, `GKE_SA_KEY`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
 
 ## Deployment
 
 **Cluster**: `dwk-cluster` (europe-west3-b)
 
-**Deploy manually**:
+**GitOps Deployment** (recommended):
+
+```bash
+# Changes auto-deploy via ArgoCD
+git add .
+git commit -m "Update application"
+git push
+# Wait ~3 minutes for ArgoCD to sync
+```
+
+**Manual Deployment** (for testing):
 
 ```bash
 gcloud container clusters get-credentials dwk-cluster --zone europe-west3-b
-kubectl create namespace <namespace>
-sops -d todo-backend/k8s/secret.enc.yaml | kubectl apply -n <namespace> -f -
-cd todo-project && kustomize edit set namespace <namespace> && kustomize build . | kubectl apply -f -
+kubectl create namespace todo
+cd todo-project
+kustomize build . | kubectl apply -f -
 ```
 
 **Access**:
 
 ```bash
-kubectl get ingress todo-app-ingress -n <namespace>
+kubectl get ingress todo-app-ingress -n todo
 ```
 
 Visit: `http://<INGRESS-IP>/`
