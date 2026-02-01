@@ -17,6 +17,7 @@ env:
   REPOSITORY: todo-project
   FRONTEND_IMAGE: todo-app
   BACKEND_IMAGE: todo-backend
+  BROADCASTER_IMAGE: broadcaster
   JOB_IMAGE: todo-cronjob
   BRANCH: ${{ github.ref_name }}
 
@@ -57,6 +58,11 @@ jobs:
          docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA ./todo-project/todo-backend
          docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
 
+     - name: Build and push Broadcaster image
+       run: |
+         docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:$BRANCH-$GITHUB_SHA ./todo-project/broadcaster
+         docker push $REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:$BRANCH-$GITHUB_SHA
+
      - name: Build and push Job image
        run: |
          docker build -t $REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA ./todo-project/todo-job
@@ -87,15 +93,18 @@ jobs:
         echo "${{ secrets.SOPS_AGE_KEY }}" > /tmp/key.txt
         export SOPS_AGE_KEY_FILE=/tmp/key.txt
         sops -d ./todo-project/todo-backend/k8s/secret.enc.yaml | kubectl apply -n $NAMESPACE -f -
+        sops -d ./todo-project/broadcaster/k8s/secret.enc.yaml | kubectl apply -n $NAMESPACE -f -
         
         cd ./todo-project
         
         kustomize edit set image zanaad/todo-app=$REGISTRY/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:$BRANCH-$GITHUB_SHA
         kustomize edit set image zanaad/todo-backend=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:$BRANCH-$GITHUB_SHA
         kustomize edit set image zanaad/todo-cronjob=$REGISTRY/$PROJECT_ID/$REPOSITORY/$JOB_IMAGE:$BRANCH-$GITHUB_SHA
+        kustomize edit set image zanaad/broadcaster=$REGISTRY/$PROJECT_ID/$REPOSITORY/$BROADCASTER_IMAGE:$BRANCH-$GITHUB_SHA
         
         kustomize edit set namespace $NAMESPACE
         kustomize build . | kubectl apply -f -
 
         kubectl rollout status deployment/todo-backend -n $NAMESPACE
         kubectl rollout status deployment/todo-app -n $NAMESPACE
+        kubectl rollout status deployment/broadcaster -n $NAMESPACE

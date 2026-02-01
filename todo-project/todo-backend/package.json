@@ -9,7 +9,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-    "dependencies": {
-    "pg": "^8.11.3"
+  "dependencies": {
+    "pg": "^8.11.3",
+    "nats": "^2.20.0"
   }
 }

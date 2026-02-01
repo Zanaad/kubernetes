@@ -7,10 +7,17 @@ spec:
   rules:
     - http:
         paths:
+          - path: /todos
+            pathType: Prefix
+            backend:
+              service:
+                name: todo-backend-svc
+                port:
+                  number: 3000
           - path: /
             pathType: Prefix
             backend:
               service:
-                  name: todo-app-svc
-                  port:
-                    number: 3000
+                name: todo-app-svc
+                port:
+                  number: 3000

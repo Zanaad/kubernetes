@@ -1,7 +1,12 @@
 const http = require("http");
 const { Pool } = require("pg");
+const { connect } = require("nats");
 
 const port = process.env.PORT || 3000;
+const NATS_URL =
+  process.env.NATS_URL || "nats://my-nats.todo.svc.cluster.local:4222";
+
+let nc = null;
 
 const pool = new Pool({
   host: process.env.POSTGRES_HOST || "postgres-svc",
@@ -35,7 +40,27 @@ async function getTodos() {
 }
 
 async function setTodoDone(id) {
-  await pool.query("UPDATE todos SET done = TRUE WHERE id = $1", [id]);
+  const result = await pool.query(
+    "UPDATE todos SET done = TRUE WHERE id = $1 RETURNING id, text, done",
+    [id],
+  );
+
+  // Send NATS message if connected
+  if (nc && result.rows[0]) {
+    try {
+      nc.publish(
+        "todo.updated",
+        JSON.stringify({
+          id: result.rows[0].id,
+          task: result.rows[0].text,
+          done: true,
+          timestamp: new Date().toISOString(),
+        }),
+      );
+    } catch (err) {
+      console.error("Failed to publish NATS message", err);
+    }
+  }
 }
 
 async function createTodo(id, text) {
@@ -43,6 +68,24 @@ async function createTodo(id, text) {
     "INSERT INTO todos (id, text) VALUES ($1, $2) RETURNING id, text",
     [id, text],
   );
+
+  // Send NATS message if connected
+  if (nc) {
+    try {
+      nc.publish(
+        "todo.created",
+        JSON.stringify({
+          id: result.rows[0].id,
+          task: result.rows[0].text,
+          done: false,
+          timestamp: new Date().toISOString(),
+        }),
+      );
+    } catch (err) {
+      console.error("Failed to publish NATS message", err);
+    }
+  }
+
   return result.rows[0];
 }
 
@@ -160,6 +203,18 @@ const server = http.createServer(async (req, res) => {
 
 async function start() {
   await initDatabase();
+
+  // Connect to NATS
+  try {
+    nc = await connect({
+      servers: [NATS_URL],
+    });
+    console.log(`Connected to NATS at ${NATS_URL}`);
+  } catch (err) {
+    console.warn(`Warning: Could not connect to NATS: ${err.message}`);
+    // Continue anyway - NATS is optional for core functionality
+  }
+
   server.listen(port, () => {
     console.log(`todo-backend listening on port ${port}`);
     console.log(`Connected to Postgres at ${process.env.POSTGRES_HOST}`);
