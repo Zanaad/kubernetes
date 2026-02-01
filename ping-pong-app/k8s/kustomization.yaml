@@ -10,4 +10,4 @@ resources:
 images:
 - name: PING_PONG_IMAGE
   newName: zanaad/ping-pong-app
-  newTag: 9eae1e6ae9bf6930c47afe12e4b64e74f1cb4af8
+  newTag: e2ef1e1046996eb9b3f9b1ad839e791bd73a895d
