@@ -1,13 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - deployment.yaml
-  - service.yaml
-  - postgres-stset.yaml
-  - postgres-svc.yaml
-  - rollout.yaml
-  - analysistemplate.yaml
+- deployment.yaml
+- service.yaml
+- postgres-stset.yaml
+- postgres-svc.yaml
+- rollout.yaml
+- analysistemplate.yaml
 images:
-  - name: PING_PONG_IMAGE
-    newName: zanaad/ping-pong-app
-    newTag: latest
+- name: PING_PONG_IMAGE
+  newName: zanaad/ping-pong-app
+  newTag: e5a28e7fcb0b631f9711f05536e09beb758ade57

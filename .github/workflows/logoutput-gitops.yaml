@@ -47,3 +47,5 @@ jobs:
         with:
           add: 'log-output-app/k8s/kustomization.yaml'
           message: 'Update log-output images to ${{ github.sha }}'
+          pull: '--rebase --autostash'
+          default_author: github_actions

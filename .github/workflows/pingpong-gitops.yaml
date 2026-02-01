@@ -40,4 +40,5 @@ jobs:
         with:
           add: 'ping-pong-app/k8s/kustomization.yaml'
           message: 'Update ping-pong images to ${{ github.sha }}'
+          pull: '--rebase --autostash'
           default_author: github_actions

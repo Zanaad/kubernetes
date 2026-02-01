@@ -79,4 +79,5 @@ jobs:
        with:
          add: 'todo-project/kustomization.yaml'
          message: 'Update todo-project images to ${{ github.sha }}'
+         pull: '--rebase --autostash'
          default_author: github_actions
