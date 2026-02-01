@@ -10,7 +10,7 @@ resources:
 images:
 - name: READER_IMAGE
   newName: zanaad/log-reader-app
-  newTag: ac651dabd480acd46a5f12004de38836f3198b78
+  newTag: 9eae1e6ae9bf6930c47afe12e4b64e74f1cb4af8
 - name: WRITER_IMAGE
   newName: zanaad/log-writer-app
-  newTag: ac651dabd480acd46a5f12004de38836f3198b78
+  newTag: 9eae1e6ae9bf6930c47afe12e4b64e74f1cb4af8
