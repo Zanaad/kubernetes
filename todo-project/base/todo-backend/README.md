@@ -1,32 +1,17 @@
 # Todo Backend
 
-Node.js REST API that stores todos in a Postgres database and exposes HTTP endpoints for the todo-app frontend to consume.
+REST API with PostgreSQL storage and NATS event publishing.
 
-## Endpoints
+**Purpose**: Provides todo CRUD operations, persists data to PostgreSQL, and publishes events to NATS.
 
-- `GET /todos` — return all todos as JSON
-- `POST /todos` — create a todo `{ text }` (max 140 chars), returns `{ id, text }`
+**Technology**: Node.js, Express, PostgreSQL, NATS
 
-## Features
+**API Endpoints**:
 
-- **Request logging**: JSON logs every todo creation attempt (created or rejected)
-- **Validation**: Enforces 140 character limit on todo text
-- **Postgres StatefulSet**: Single replica with encrypted secrets and persistent volumes
-- **Auto-initialization**: Creates todos table on startup
-- **Persistence**: Todos survive pod restarts
+- `GET /todos` - List todos
+- `POST /todos` - Create todo (publishes NATS event)
+- `PUT /todos/:id` - Update todo
+- `DELETE /todos/:id` - Delete todo
+- `GET /healthz` - Health check
 
-## Deploy to Kubernetes
-
-**With Kustomize (recommended)**:
-
-```bash
-cd ../  # Go to todo-project root
-kubectl apply -k .
-```
-
-**Individual app only**:
-
-```bash
-kubens todo
-kubectl apply -k k8s/
-```
+**Database**: PostgreSQL with automated migrations

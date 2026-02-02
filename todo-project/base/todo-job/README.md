@@ -1,32 +1,11 @@
-# Wikipedia Todo CronJob
+# Todo Job
 
-Kubernetes CronJob that generates a todo every hour to remind you to read a random Wikipedia article.
+Hourly Kubernetes CronJob that reads a random Wikipedia URL.
 
-## How it works
+**Purpose**: Demonstrates scheduled job execution in Kubernetes.
 
-- Fetches random Wikipedia article URL from `https://en.wikipedia.org/wiki/Special:Random`
-- Creates a todo: "Read the article at <URL>"
-- Runs hourly at the start of each hour
+**Technology**: Bash, curl, Alpine Linux
 
-## Deploy to Kubernetes
+**Schedule**: Every hour (`0 * * * *`)
 
-**With Kustomize (recommended)**:
-
-```bash
-cd ../  # Go to todo-project root
-kubectl apply -k .
-```
-
-**Individual component only**:
-
-```bash
-kubectl apply -k k8s/
-```
-
-## Test manually
-
-```bash
-kubectl create job --from=cronjob/todo-cronjob test-wiki-job -n todo
-kubectl logs job/test-wiki-job -n todo
-kubectl delete job test-wiki-job -n todo
-```
+**Action**: Fetches `https://en.wikipedia.org/wiki/Special:Random` and logs to stdout
