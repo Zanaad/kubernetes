@@ -6,6 +6,7 @@ const LOG_WRITER_SERVICE =
   process.env.LOG_WRITER_SERVICE || "http://localhost:3001";
 const PING_PONG_SERVICE =
   process.env.PING_PONG_SERVICE || "http://ping-pong-app-svc:3000";
+const GREETER_SERVICE = process.env.GREETER_SERVICE;
 
 async function getLogEntry() {
   return new Promise((resolve) => {
@@ -65,6 +66,29 @@ async function getPingPongCount() {
   });
 }
 
+async function getGreeting() {
+  return new Promise((resolve) => {
+    const url = new URL("/", GREETER_SERVICE);
+
+    http
+      .get(url, (response) => {
+        let data = "";
+
+        response.on("data", (chunk) => {
+          data += chunk;
+        });
+
+        response.on("end", () => {
+          resolve(data.trim() || "(no greeting)");
+        });
+      })
+      .on("error", (err) => {
+        console.error("Failed to fetch greeting:", err);
+        resolve("(greeter not available)");
+      });
+  });
+}
+
 async function checkPingPongService() {
   return new Promise((resolve, reject) => {
     const url = new URL(`${PING_PONG_SERVICE}/count`);
@@ -112,7 +136,13 @@ const server = http.createServer(async (req, res) => {
       }
       const envMessage = process.env.MESSAGE || "(not set)";
 
-      const responseText = `file content: ${fileContent}\nenv variable: MESSAGE=${envMessage}\n${logEntry}\nPing / Pongs: ${pongCount}`;
+      let responseText = `file content: ${fileContent}\nenv variable: MESSAGE=${envMessage}\n${logEntry}\nPing / Pongs: ${pongCount}`;
+
+      // The greeter is only used in the service mesh setup (exercise 5.3)
+      if (GREETER_SERVICE) {
+        const greeting = await getGreeting();
+        responseText += `\nGreetings: ${greeting}`;
+      }
 
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end(responseText);
@@ -131,4 +161,7 @@ server.listen(port, () => {
   console.log(`Log reader listening on port ${port}`);
   console.log(`Fetching logs from ${LOG_WRITER_SERVICE}/logs`);
   console.log(`Fetching pong count from ${PING_PONG_SERVICE}/count`);
+  if (GREETER_SERVICE) {
+    console.log(`Fetching greeting from ${GREETER_SERVICE}`);
+  }
 });

@@ -1,0 +1,15 @@
+# Ingress gateway run by Istio. Its LoadBalancer service gets port 80 of the
+# k3d load balancer, which the cluster maps to localhost:9080.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: log-output-gateway
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: Same

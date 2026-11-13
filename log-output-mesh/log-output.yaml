@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: log-output-config
+data:
+  MESSAGE: "hello world"
+  information.txt: |
+    this text is from file
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-output-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-output-app
+  template:
+    metadata:
+      labels:
+        app: log-output-app
+        version: v1
+    spec:
+      containers:
+      - name: log-writer-app
+        image: WRITER_IMAGE
+        ports:
+        - containerPort: 3001
+        env:
+        - name: PORT
+          value: "3001"
+      - name: log-reader-app
+        image: READER_IMAGE
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: PORT
+          value: "3000"
+        - name: PING_PONG_SERVICE
+          value: http://ping-pong-app-svc:3000
+        - name: GREETER_SERVICE
+          value: http://greeter-svc:3000
+        - name: MESSAGE
+          valueFrom:
+            configMapKeyRef:
+              name: log-output-config
+              key: MESSAGE
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config
+      volumes:
+      - name: config-volume
+        configMap:
+          name: log-output-config
+          items:
+          - key: information.txt
+            path: information.txt
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: log-output-app-svc
+spec:
+  selector:
+    app: log-output-app
+  ports:
+  - port: 3000
+    targetPort: 3000

@@ -1,0 +1,10 @@
+{
+  "name": "greeter-app",
+  "version": "1.0.0",
+  "description": "Responds to GET / with a greeting",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "license": "ISC"
+}

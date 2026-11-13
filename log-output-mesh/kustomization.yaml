@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: log-pong
+resources:
+- namespace.yaml
+- waypoint.yaml
+- gateway.yaml
+- route.yaml
+- postgres.yaml
+- ping-pong.yaml
+- log-output.yaml
+- greeter.yaml
+- greeter-route.yaml
+images:
+- name: READER_IMAGE
+  newName: zanaad/log-reader-app
+  newTag: "5.3"
+- name: WRITER_IMAGE
+  newName: zanaad/log-writer-app
+  newTag: 9eae1e6ae9bf6930c47afe12e4b64e74f1cb4af8
+- name: PING_PONG_IMAGE
+  newName: zanaad/ping-pong-app
+  newTag: e2ef1e1046996eb9b3f9b1ad839e791bd73a895d
+- name: GREETER_IMAGE
+  newName: zanaad/greeter-app
+  newTag: "1.0"

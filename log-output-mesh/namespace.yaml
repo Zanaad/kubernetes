@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: log-pong
+  labels:
+    # Add every pod in the namespace to the Istio ambient mesh
+    istio.io/dataplane-mode: ambient
+    # Send service traffic through the waypoint proxy (needed for L7 routing)
+    istio.io/use-waypoint: waypoint

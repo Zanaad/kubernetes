@@ -1,0 +1,93 @@
+# Two versions of the greeter. Same image, different greeting and version label.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greeter-v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: greeter
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: greeter
+        version: v1
+    spec:
+      containers:
+      - name: greeter
+        image: GREETER_IMAGE
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        env:
+        - name: VERSION
+          value: v1
+        - name: GREETING
+          value: Hello
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greeter-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: greeter
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: greeter
+        version: v2
+    spec:
+      containers:
+      - name: greeter
+        image: GREETER_IMAGE
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        env:
+        - name: VERSION
+          value: v2
+        - name: GREETING
+          value: Moi
+---
+# Service that Log output calls. The HTTPRoute in greeter-route.yaml is attached to it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: greeter-svc
+spec:
+  selector:
+    app: greeter
+  ports:
+  - port: 3000
+    targetPort: 3000
+---
+# One service per version, used as the backends of the traffic split
+apiVersion: v1
+kind: Service
+metadata:
+  name: greeter-svc-1
+spec:
+  selector:
+    app: greeter
+    version: v1
+  ports:
+  - port: 3000
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greeter-svc-2
+spec:
+  selector:
+    app: greeter
+    version: v2
+  ports:
+  - port: 3000
+    targetPort: 3000

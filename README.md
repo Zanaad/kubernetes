@@ -10,6 +10,7 @@ Applications:
 - [todo-project](todo-project) - The course project: todo-app, todo-backend, todo-job and broadcaster
 - [dummysite](dummysite) - DummySite custom resource and controller
 - [istio-bookinfo](istio-bookinfo) - Istio ambient mesh with the Bookinfo sample app
+- [log-output-mesh](log-output-mesh) and [greeter-app](greeter-app) - Log output in the Istio mesh with a greeter service and traffic splitting
 - [dwk-project-code](https://github.com/Zanaad/dwk-project-code) and [dwk-project-gitops](https://github.com/Zanaad/dwk-project-gitops) - the project's code and configuration repositories (exercise 4.10)
 
 ## Part 1: Kubernetes basics (course chapter 2)
@@ -83,3 +84,4 @@ Applications:
 |---|---|---|
 | [5.1](https://github.com/Zanaad/kubernetes/tree/5.1) | DIY CRD & Controller | [dummysite](https://github.com/Zanaad/kubernetes/tree/5.1/dummysite) |
 | [5.2](https://github.com/Zanaad/kubernetes/tree/5.2) | Getting started with Istio service mesh | [istio-bookinfo](https://github.com/Zanaad/kubernetes/tree/5.2/istio-bookinfo) |
+| [5.3](https://github.com/Zanaad/kubernetes/tree/5.3) | Log app, the Service Mesh Edition | [log-output-mesh](https://github.com/Zanaad/kubernetes/tree/5.3/log-output-mesh), [greeter-app](https://github.com/Zanaad/kubernetes/tree/5.3/greeter-app), [log-output-app](https://github.com/Zanaad/kubernetes/tree/5.3/log-output-app) |

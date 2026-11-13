@@ -1,0 +1,14 @@
+# Waypoint proxy for the namespace, generated with:
+# istioctl waypoint generate --namespace log-pong --for service
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: waypoint
+  labels:
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+  - name: mesh
+    port: 15008
+    protocol: HBONE

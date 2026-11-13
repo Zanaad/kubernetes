@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ping-pong-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ping-pong-app
+  template:
+    metadata:
+      labels:
+        app: ping-pong-app
+        version: v1
+    spec:
+      containers:
+      - name: ping-pong-app
+        image: PING_PONG_IMAGE
+        ports:
+        - containerPort: 3000
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: PORT
+          value: "3000"
+        - name: POSTGRES_HOST
+          value: postgres-svc
+        envFrom:
+        - secretRef:
+            name: postgres-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ping-pong-app-svc
+spec:
+  selector:
+    app: ping-pong-app
+  ports:
+  - port: 3000
+    targetPort: 3000
