@@ -13,6 +13,7 @@ Applications:
 - [log-output-mesh](log-output-mesh) and [greeter-app](greeter-app) - Log output in the Istio mesh with a greeter service and traffic splitting
 - [wikipedia-app](wikipedia-app) - nginx serving Wikipedia pages with an init container and a sidecar
 - [knative](knative) - Knative Serving on k3d with the getting started examples
+- [log-output-serverless](log-output-serverless) - Log output with Ping-pong as a Knative Service
 - [dwk-project-code](https://github.com/Zanaad/dwk-project-code) and [dwk-project-gitops](https://github.com/Zanaad/dwk-project-gitops) - the project's code and configuration repositories (exercise 4.10)
 
 ## Part 1: Kubernetes basics (course chapter 2)
@@ -89,3 +90,4 @@ Applications:
 | [5.3](https://github.com/Zanaad/kubernetes/tree/5.3) | Log app, the Service Mesh Edition | [log-output-mesh](https://github.com/Zanaad/kubernetes/tree/5.3/log-output-mesh), [greeter-app](https://github.com/Zanaad/kubernetes/tree/5.3/greeter-app), [log-output-app](https://github.com/Zanaad/kubernetes/tree/5.3/log-output-app) |
 | [5.4](https://github.com/Zanaad/kubernetes/tree/5.4) | Wikipedia with init and sidecar | [wikipedia-app](https://github.com/Zanaad/kubernetes/tree/5.4/wikipedia-app) |
 | [5.6](https://github.com/Zanaad/kubernetes/tree/5.6) | Trying serverless | [knative](https://github.com/Zanaad/kubernetes/tree/5.6/knative) |
+| [5.7](https://github.com/Zanaad/kubernetes/tree/5.7) | Deploy to serverless | [log-output-serverless](https://github.com/Zanaad/kubernetes/tree/5.7/log-output-serverless) |

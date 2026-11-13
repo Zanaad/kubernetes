@@ -1,0 +1,24 @@
+# Ping-pong as a Knative Service: Knative creates the deployment, routes and
+# revisions, and scales the app to zero when there is no traffic.
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ping-pong-app
+  namespace: log-pong
+spec:
+  template:
+    spec:
+      containers:
+        - image: zanaad/ping-pong-app:e2ef1e1046996eb9b3f9b1ad839e791bd73a895d
+          # Knative sets the PORT environment variable to this port
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /readyz
+          env:
+            - name: POSTGRES_HOST
+              value: postgres-svc.log-pong.svc.cluster.local
+          envFrom:
+            - secretRef:
+                name: postgres-secret
