@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wikipedia-app
+  namespace: wikipedia
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wikipedia-app
+  template:
+    metadata:
+      labels:
+        app: wikipedia-app
+    spec:
+      volumes:
+        # Shared public www directory
+        - name: www
+          emptyDir: {}
+      initContainers:
+        # 1. Init container: saves the Kubernetes article before nginx starts
+        - name: fetch-kubernetes-page
+          image: curlimages/curl:8.11.1
+          args:
+            - --silent
+            - --show-error
+            - --fail
+            - --location
+            - --user-agent
+            - "DwkWikipediaApp/1.0 (DevOps with Kubernetes course exercise)"
+            - --output
+            - /www/index.html
+            - https://en.wikipedia.org/wiki/Kubernetes
+          volumeMounts:
+            - name: www
+              mountPath: /www
+        # 2. Sidecar container (native sidecar: an init container with restartPolicy Always).
+        #    It starts after the init container and keeps running next to nginx.
+        #    Every 5-15 minutes it replaces the page with a random Wikipedia article.
+        - name: random-page-sidecar
+          image: curlimages/curl:8.11.1
+          restartPolicy: Always
+          env:
+            - name: MIN_WAIT_SECONDS
+              value: "300"
+            - name: MAX_WAIT_SECONDS
+              value: "900"
+            - name: USER_AGENT
+              value: "DwkWikipediaApp/1.0 (DevOps with Kubernetes course exercise)"
+          command: ["/bin/sh", "-c"]
+          # "$$(" is how Kubernetes escapes "$(", so the shell gets a normal command substitution
+          args:
+            - |
+              while true; do
+                WAIT=$$(shuf -i "${MIN_WAIT_SECONDS}-${MAX_WAIT_SECONDS}" -n 1)
+                echo "Waiting ${WAIT} seconds before fetching a random page"
+                sleep "${WAIT}"
+                if curl --silent --show-error --fail --location \
+                     --user-agent "${USER_AGENT}" \
+                     --output /www/index.html.tmp \
+                     https://en.wikipedia.org/wiki/Special:Random; then
+                  mv /www/index.html.tmp /www/index.html
+                  echo "Saved: $$(grep -o '<title>[^<]*' /www/index.html | head -1 | cut -c8-)"
+                else
+                  echo "Failed to fetch a random page, keeping the current one"
+                fi
+              done
+          volumeMounts:
+            - name: www
+              mountPath: /www
+      containers:
+        # 3. Main container: nginx serves whatever is in the public www directory
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: www
+              mountPath: /usr/share/nginx/html
+              readOnly: true
